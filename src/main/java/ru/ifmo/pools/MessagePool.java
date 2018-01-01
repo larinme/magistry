@@ -14,20 +14,20 @@ public class MessagePool {
     private Map<Long, Message> pool = new HashMap<>();
     private long nextId = 0;
 
-    private long getNextId() {
-        return ++nextId;
-    }
-
-    public Message put(Topic topic, Author author, Message reference, String text, int orderNum, Date date){
-        Message message = new Message(getNextId(), topic, author, reference, text, orderNum, date);
-        pool.put(message.getId(), message);
-        return message;
-    }
-
     public static MessagePool getInstance() {
         if (instance == null) {
             instance = new MessagePool();
         }
         return instance;
+    }
+
+    private long getNextId() {
+        return ++nextId;
+    }
+
+    public Message put(Topic topic, Author author, Message reference, String text, int orderNum, Date date) {
+        Message message = new Message(getNextId(), topic, author, reference, text, orderNum, date);
+        pool.put(message.getId(), message);
+        return message;
     }
 }

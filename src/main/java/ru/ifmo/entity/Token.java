@@ -1,6 +1,6 @@
 package ru.ifmo.entity;
 
-public class Token extends AbstractEntity{
+public class Token extends AbstractEntity {
 
     private final TokenType tokenType;
     private final String value;

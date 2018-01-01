@@ -9,8 +9,9 @@ import java.util.Properties;
 
 public class Main {
 
-    private static Properties properties = new Properties();
     private static final String OUT;
+    private static Properties properties = new Properties();
+
     static {
         URL out = Resources.getResource("out/scripts.txt");
         OUT = out.getPath();

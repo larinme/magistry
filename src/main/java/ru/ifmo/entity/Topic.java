@@ -6,6 +6,7 @@ public class Topic extends AbstractEntity {
     private final String path;
     private final String thema;
     private final String title;
+
     public Topic(long id, Source source, String path, String thema, String title) {
         super(id);
         this.source = source;

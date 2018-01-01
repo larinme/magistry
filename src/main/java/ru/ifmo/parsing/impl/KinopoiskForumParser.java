@@ -24,14 +24,12 @@ import java.util.regex.Pattern;
 public class KinopoiskForumParser extends AbstractParser {
 
     private static final String TITLE_QUERY = ".navbar > strong";
-    private static final String POSTS_QUERY = "div.posts > #table";
     private static final String DATE_QUERY = "td.thead";
     private static final String USERNAME_QUERY = "a.bigusername";
     private static final String POST_QUERY = "post_message_";
     private static final Pattern COUNT_OF_PAGES_PATTERN = Pattern.compile("Страница \\d* из \\d*");
     private static final DateFormat format = new SimpleDateFormat("dd.MM.yyyy, HH:mm", Locale.ENGLISH);
     private final String out;
-    private Source source;
     private Topic topic;
 
     public KinopoiskForumParser(String out) {
@@ -43,7 +41,7 @@ public class KinopoiskForumParser extends AbstractParser {
         String url = document.baseUri();
 
         SourcePool sourcePool = SourcePool.getInstance();
-        source = sourcePool.putIfNotExists("Kinopoisk", url);
+        Source source = sourcePool.putIfNotExists("Kinopoisk", url);
 
         TopicPool topicTopicPool = TopicPool.getInstance();
         String title = document.select(TITLE_QUERY).text();

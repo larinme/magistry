@@ -10,7 +10,8 @@ public abstract class AbstractParser implements Parser {
 
     abstract Pattern getCountOfPagesPattern();
 
-    protected void init(Document document){}
+    protected void init(Document document) {
+    }
 
     public int getCountOfPages(String html) {
         Pattern pattern = getCountOfPagesPattern();
