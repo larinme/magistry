@@ -2,13 +2,11 @@ package ru.ifmo.entity;
 
 public class Source extends AbstractEntity {
 
-    private final long id;
     private final String name;
     private final String url;
 
     public Source(long id, String name, String url) {
         super(id);
-        this.id = id;
         this.name = name;
         this.url = url;
     }
@@ -21,6 +19,14 @@ public class Source extends AbstractEntity {
         Source source = (Source) o;
 
         return id == source.id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getUrl() {
+        return url;
     }
 
     @Override

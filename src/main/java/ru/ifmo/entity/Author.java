@@ -21,6 +21,14 @@ public class Author extends AbstractEntity {
         return id == author.id;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
     @Override
     public int hashCode() {
         return (int) (id ^ (id >>> 32));

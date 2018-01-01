@@ -6,7 +6,6 @@ public class Topic extends AbstractEntity {
     private final String path;
     private final String thema;
     private final String title;
-
     public Topic(long id, Source source, String path, String thema, String title) {
         super(id);
         this.source = source;
@@ -28,5 +27,21 @@ public class Topic extends AbstractEntity {
     @Override
     public int hashCode() {
         return (int) (id ^ (id >>> 32));
+    }
+
+    public Source getSource() {
+        return source;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public String getThema() {
+        return thema;
+    }
+
+    public String getTitle() {
+        return title;
     }
 }
