@@ -5,6 +5,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import ru.ifmo.entity.Author;
+import ru.ifmo.entity.Message;
 import ru.ifmo.entity.Source;
 import ru.ifmo.entity.Topic;
 import ru.ifmo.pools.AuthorPool;
@@ -53,32 +54,38 @@ public class KinopoiskForumParser extends AbstractParser {
         Document document = Jsoup.connect(url).get();
         init(document);
         int countOfPages = getCountOfPages(document.html());
-        for (int i = 1; i <= countOfPages; i++) {
-            System.out.println("Страница  " + i);
-            document = Jsoup.connect(url + "&page=" + i).get();
+        for (int currentPage = 1; currentPage <= countOfPages; currentPage++) {
+            System.out.println("Страница  " + currentPage);
+            document = Jsoup.connect(url + "&page=" + currentPage).get();
             Elements posts = document.getElementById("posts").getElementsByClass("tborder");
-            for (int j = 1; j < posts.size(); j++) {
-                Element post = posts.get(j - 1);
-                long messageId = Long.parseLong(post.id().replace("post", ""));
-                String dateString = post.select(DATE_QUERY).get(0).text();
-
-                String authorName = post.select(USERNAME_QUERY).text();
-                AuthorPool authorPool = AuthorPool.getInstance();
-                Author author = authorPool.putIfNotExists(authorName, "");
-
-                Element text = post.getElementById(POST_QUERY + messageId);
-                String textMessage = text.text();
-                Date date;
-                try {
-                    date = format.parse(dateString);
-                } catch (ParseException e) {
-                    date = new Date();
-                }
-                int orderNum = 25 * (i - 1) + j;
-                MessagePool.getInstance().put(topic, author, null, textMessage, orderNum, date);
+            for (int currentMessage = 1; currentMessage < posts.size(); currentMessage++) {
+                Element post = posts.get(currentMessage - 1);
+                Author author = parseAuthor(post);
+                Message message = parseMessage(post, author, currentPage, currentMessage);
             }
 
         }
+    }
+
+    private Author parseAuthor(Element post) {
+        String authorName = post.select(USERNAME_QUERY).text();
+        AuthorPool authorPool = AuthorPool.getInstance();
+        return authorPool.putIfNotExists(authorName, "");
+    }
+
+    private Message parseMessage(Element post, Author author, int pageNumber, int currentPost) {
+        long messageId = Long.parseLong(post.id().replace("post", ""));
+        String dateString = post.select(DATE_QUERY).get(0).text();
+        Element text = post.getElementById(POST_QUERY + messageId);
+        String textMessage = text.text();
+        Date date;
+        try {
+            date = format.parse(dateString);
+        } catch (ParseException e) {
+            date = new Date();
+        }
+        int orderNum = 25 * (pageNumber - 1) + currentPost;
+        return MessagePool.getInstance().put(topic, author, null, textMessage, orderNum, date);
     }
 
     Pattern getCountOfPagesPattern() {
