@@ -4,14 +4,14 @@ public class Token extends AbstractEntity {
 
     private final TokenType tokenType;
     private final String value;
-    private final long messageID;
-    private final short orderNumber;
+    private final Message message;
+    private int orderNumber;
 
-    public Token(long id, TokenType tokenType, String value, long messageID, short orderNumber) {
+    public Token(long id, TokenType tokenType, String value, Message message, int orderNumber) {
         super(id);
         this.tokenType = tokenType;
         this.value = value;
-        this.messageID = messageID;
+        this.message = message;
         this.orderNumber = orderNumber;
     }
 
@@ -28,5 +28,25 @@ public class Token extends AbstractEntity {
     @Override
     public int hashCode() {
         return (int) (id ^ (id >>> 32));
+    }
+
+    public TokenType getTokenType() {
+        return tokenType;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public Message getMessage() {
+        return message;
+    }
+
+    public int getOrderNumber() {
+        return orderNumber;
+    }
+
+    public void setOrderNumber(int orderNumber) {
+        this.orderNumber = orderNumber;
     }
 }

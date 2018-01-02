@@ -1,24 +1,19 @@
 package ru.ifmo.parsing.impl;
 
+import com.google.common.collect.ImmutableMap;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import ru.ifmo.entity.Author;
-import ru.ifmo.entity.Message;
-import ru.ifmo.entity.Source;
-import ru.ifmo.entity.Topic;
-import ru.ifmo.pools.AuthorPool;
-import ru.ifmo.pools.MessagePool;
-import ru.ifmo.pools.SourcePool;
-import ru.ifmo.pools.TopicPool;
+import ru.ifmo.entity.*;
+import ru.ifmo.pools.*;
 
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
+import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class KinopoiskForumParser extends AbstractParser {
@@ -83,7 +78,48 @@ public class KinopoiskForumParser extends AbstractParser {
             date = new Date();
         }
         int orderNum = 25 * (pageNumber - 1) + currentPost;
-        return MessagePool.getInstance().put(topic, author, null, textMessage, orderNum, date);
+        Message message = MessagePool.getInstance().put(topic, author, null, textMessage, orderNum, date);
+        split(text.html(), message);
+        return message;
+    }
+
+    private void split(String html, Message message){
+        TokenPool tokenPool = TokenPool.getInstance();
+        Map<TokenType, List<Token>> tokens = new HashMap<>();
+        String text = html.replaceAll("<br\\s/>", "").replaceAll("&quot;", "\"").replaceAll("\n","\n ");
+        for (Map.Entry<TokenType, Pattern> entry : PATTERNS.entrySet()) {
+            Pattern pattern = entry.getValue();
+            TokenType tokenType = entry.getKey();
+            List<Token> list = new ArrayList<>();
+            Matcher matcher = pattern.matcher(text);
+            int currentTypeIndex = 0;
+            while (matcher.find()){
+                Token token = tokenPool.putIfNotExists(tokenType, matcher.group(), message, 1);
+                list.add(token);
+                text = text.replaceFirst(pattern.pattern(), "\\$" + tokenType.represent() + currentTypeIndex++ +"\\$");
+                tokens.put(tokenType, list);
+            }
+        }
+
+        String[] split = text.split(" ");
+        StringBuilder builder = new StringBuilder();
+        int orderNum = 1;
+        for (int i = 0; i < split.length; i++) {
+            String element = split[i];
+            if (!Pattern.compile("\\$\\w\\d\\$").matcher(element).find()){
+                builder.append(element).append(" ");
+                if (i + 1 == split.length){
+                    tokenPool.putIfNotExists(TokenType.PLAINT_TEXT, builder.toString(), message, orderNum);
+                }
+            } else {
+                tokenPool.putIfNotExists(TokenType.PLAINT_TEXT, builder.toString(), message, orderNum);
+                builder = new StringBuilder();
+                TokenType type = TokenType.PRESENTERS.get(element.charAt(1));
+                int index = Integer.parseInt(String.valueOf(element.charAt(2)));
+                Token token = tokens.get(type).get(index);
+                token.setOrderNumber(orderNum);
+            }
+        }
     }
 
     Pattern getCountOfPagesPattern() {
