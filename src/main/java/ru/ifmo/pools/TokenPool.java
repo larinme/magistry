@@ -2,14 +2,12 @@ package ru.ifmo.pools;
 
 import ru.ifmo.entity.*;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class TokenPool {
 
     private static TokenPool instance = new TokenPool();
-    private Map<Long, Token> pool = new HashMap<>();
+    private Set<Token> pool = new HashSet<>();
     private long nextId = 0;
 
     public static TokenPool getInstance() {
@@ -27,15 +25,14 @@ public class TokenPool {
         Token token = getTopicByName(value, message);
         if (token == null) {
             token = new Token(getNextId(), type, value, message, orderNum);
-            put(token);
+            pool.add(token);
         }
         return token;
     }
 
 
     private Token getTopicByName(String value, Message message) {
-        Collection<Token> values = pool.values();
-        for (Token token : values) {
+        for (Token token : pool) {
             if (token.getValue().equals(value)
                     && token.getMessage().equals(message)) {
                 return token;
@@ -44,8 +41,4 @@ public class TokenPool {
         return null;
     }
 
-    private void put(Token token) {
-        long id = token.getId();
-        pool.put(id, token);
-    }
 }

@@ -26,6 +26,9 @@ public class KinopoiskForumParser extends AbstractParser {
     private static final DateFormat format = new SimpleDateFormat("dd.MM.yyyy, HH:mm", Locale.ENGLISH);
     private final String out;
     private Topic topic;
+    private final SourcePool sourcePool = SourcePool.getInstance();
+    private final MessagePool messagePool = MessagePool.getInstance();
+    private final TopicPool topicPool = TopicPool.getInstance();
 
     public KinopoiskForumParser(String out) {
         this.out = out;
@@ -34,13 +37,9 @@ public class KinopoiskForumParser extends AbstractParser {
     @Override
     protected void init(Document document) {
         String url = document.baseUri();
-
-        SourcePool sourcePool = SourcePool.getInstance();
         Source source = sourcePool.putIfNotExists("Kinopoisk", url);
-
-        TopicPool topicTopicPool = TopicPool.getInstance();
         String title = document.select(TITLE_QUERY).text();
-        topic = topicTopicPool.putIfNotExists(source, url, "Кино", title);
+        topic = topicPool.putIfNotExists(source, url, "Кино", title);
     }
 
     public void parse(String url) throws IOException {
@@ -55,8 +54,8 @@ public class KinopoiskForumParser extends AbstractParser {
                 Element post = posts.get(currentMessage - 1);
                 Author author = parseAuthor(post);
                 Message message = parseMessage(post, author, currentPage, currentMessage);
+                messagePool.getMessageByText(message.getText(), topic, messagePool.getFirstMessage(topic));
             }
-
         }
     }
 
@@ -78,8 +77,9 @@ public class KinopoiskForumParser extends AbstractParser {
             date = new Date();
         }
         int orderNum = 25 * (pageNumber - 1) + currentPost;
-        Message message = MessagePool.getInstance().put(topic, author, null, textMessage, orderNum, date);
+        Message message = messagePool.put(topic, author, null, textMessage, orderNum, date);
         split(text.html(), message);
+
         return message;
     }
 

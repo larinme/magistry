@@ -1,18 +1,14 @@
 package ru.ifmo.pools;
 
-import ru.ifmo.entity.Author;
 import ru.ifmo.entity.Dialogue;
 import ru.ifmo.entity.Message;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class DialoguePool {
 
     private static DialoguePool instance = new DialoguePool();
-    private Map<Long, Dialogue> pool = new HashMap<>();
+    private Set<Dialogue> pool = new HashSet<>();
     private long nextId = 0;
 
     public static DialoguePool getInstance() {
@@ -27,7 +23,7 @@ public class DialoguePool {
     }
 
     public void put(Message message){
-        put(new Dialogue(getNextId()));
+        pool.add(new Dialogue(getNextId()));
         Collection<Dialogue> dialogues = findDialoguesWithMessage(message);
 
         for (Dialogue dialogue : dialogues) {
@@ -37,7 +33,7 @@ public class DialoguePool {
 
     private Collection<Dialogue> findDialoguesWithMessage(Message message) {
         Collection<Dialogue> dialogues = new ArrayList<>();
-        for (Dialogue value : pool.values()) {
+        for (Dialogue value : pool) {
             if (value.containsMessage(message)){
                 dialogues.add(value);
             }
@@ -45,8 +41,4 @@ public class DialoguePool {
         return dialogues;
     }
 
-    private void put(Dialogue dialogue) {
-        long id = dialogue.getId();
-        pool.put(id, dialogue);
-    }
 }

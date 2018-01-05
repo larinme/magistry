@@ -2,14 +2,12 @@ package ru.ifmo.pools;
 
 import ru.ifmo.entity.Source;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class SourcePool {
 
     private static SourcePool instance = new SourcePool();
-    private Map<Long, Source> pool = new HashMap<>();
+    private Set<Source> pool = new HashSet<>();
     private long nextId = 0;
 
     public static SourcePool getInstance() {
@@ -27,14 +25,13 @@ public class SourcePool {
         Source source = getSourceByName(name);
         if (source == null) {
             source = new Source(getNextId(), name, url);
-            put(source);
+            pool.add(source);
         }
         return source;
     }
 
     private Source getSourceByName(String name) {
-        Collection<Source> values = pool.values();
-        for (Source source : values) {
+        for (Source source : pool) {
             if (source.getName().equals(name)) {
                 return source;
             }
@@ -42,8 +39,4 @@ public class SourcePool {
         return null;
     }
 
-    private void put(Source source) {
-        long id = source.getId();
-        pool.put(id, source);
-    }
 }

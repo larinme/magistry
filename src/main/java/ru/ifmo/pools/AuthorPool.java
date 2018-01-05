@@ -2,14 +2,12 @@ package ru.ifmo.pools;
 
 import ru.ifmo.entity.Author;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class AuthorPool {
 
     private static AuthorPool instance = new AuthorPool();
-    private Map<Long, Author> pool = new HashMap<>();
+    private Set<Author> pool = new HashSet<>();
     private long nextId = 0;
 
     public static AuthorPool getInstance() {
@@ -27,14 +25,13 @@ public class AuthorPool {
         Author author = getAuthorByName(name);
         if (author == null) {
             author = new Author(getNextId(), name, city);
-            put(author);
+            pool.add(author);
         }
         return author;
     }
 
     private Author getAuthorByName(String name) {
-        Collection<Author> values = pool.values();
-        for (Author author : values) {
+        for (Author author : pool) {
             if (author.getName().equals(name)) {
                 return author;
             }
@@ -42,8 +39,4 @@ public class AuthorPool {
         return null;
     }
 
-    private void put(Author author) {
-        long id = author.getId();
-        pool.put(id, author);
-    }
 }

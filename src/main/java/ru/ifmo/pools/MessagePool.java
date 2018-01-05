@@ -2,16 +2,16 @@ package ru.ifmo.pools;
 
 import ru.ifmo.entity.Author;
 import ru.ifmo.entity.Message;
+import ru.ifmo.entity.Source;
 import ru.ifmo.entity.Topic;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class MessagePool {
 
     private static MessagePool instance = new MessagePool();
-    private Map<Long, Message> pool = new HashMap<>();
+    private Set<Message> pool = new HashSet<>();
+    private Map<Topic, Message> startMessages = new HashMap<>();
     private long nextId = 0;
 
     public static MessagePool getInstance() {
@@ -27,7 +27,19 @@ public class MessagePool {
 
     public Message put(Topic topic, Author author, Message reference, String text, int orderNum, Date date) {
         Message message = new Message(getNextId(), topic, author, reference, text, orderNum, date);
-        pool.put(message.getId(), message);
+        startMessages.putIfAbsent(topic, message);
+        pool.add(message);
         return message;
+    }
+
+    public Message getMessageByText(String text, final Topic topic, Message defaultMessage){
+        Optional<Message> message = pool.stream()
+                .filter((msg) -> msg.getTopic().equals(topic) && msg.getText().equals(text))
+                .findFirst();
+        return message.orElse(defaultMessage);
+    }
+
+    public Message getFirstMessage(Topic topic){
+        return startMessages.get(topic);
     }
 }
