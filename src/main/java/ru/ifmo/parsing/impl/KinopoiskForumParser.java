@@ -95,7 +95,7 @@ public class KinopoiskForumParser extends AbstractParser {
                     dialoguePool.put(
                             message,
                             (first, second) ->
-                                    new JaccardSimilarity().apply(first.getText(), second.getText()) > 0.5
+                                    new JaccardSimilarity().apply(first.getText(), second.getText()) > 0.5 || first.getText().startsWith(second.getText())
                     );
                 }
 
@@ -170,9 +170,9 @@ public class KinopoiskForumParser extends AbstractParser {
                 String newValue = TOKEN_TYPE_PROCESSORS.get(type).apply(token.getValue());
                 token.setValue(newValue);
                 if (type.equals(TokenType.QUOTE)){
+                    message.setText(text.replaceAll("\\$\\w\\d\\$", ""));
                     Message reference = messagePool.getMessageByText(token.getValue(), topic, messagePool.getFirstMessage(topic));
                     message.setReference(reference);
-                    message.setText(message.getText().replaceAll(token.getValue(), ""));
                 }
             }
         }

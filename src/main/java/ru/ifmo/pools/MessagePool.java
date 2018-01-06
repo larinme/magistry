@@ -33,14 +33,25 @@ public class MessagePool {
         return message;
     }
 
-    public Message getMessageByText(String text, final Topic topic, Message defaultMessage){
-        Optional<Message> message = pool.stream()
-                .filter((msg) -> msg.getTopic().equals(topic) && new JaccardSimilarity().apply(text, msg.getText()) > 0.7)
+    public Message getMessageByText(String text, final Topic topic, Message defaultMessage) {
+        for (Message message : pool) {
+            if (message.getTopic().equals(topic) &&
+                    (new JaccardSimilarity().apply(text, message.getText()) > 0.7)
+                    || message.getText().contains(text.substring(0, 15))) {
+                return message;
+            }
+        }
+        return defaultMessage;
+        /*Optional<Message> message = pool.stream()
+                .filter((msg) -> msg.getTopic().equals(topic) &&
+                        ( new JaccardSimilarity().apply(text, msg.getText()) > 0.7)
+                        || text.substring(0, 15).startsWith(msg.getText())
+                )
                 .findFirst();
-        return message.orElse(defaultMessage);
+        return message.orElse(defaultMessage);*/
     }
 
-    public Message getFirstMessage(Topic topic){
+    public Message getFirstMessage(Topic topic) {
         return startMessages.get(topic);
     }
 }
