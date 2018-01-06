@@ -1,6 +1,7 @@
 package ru.ifmo.parsing.impl;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.commons.text.similarity.JaccardSimilarity;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -13,8 +14,10 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class KinopoiskForumParser extends AbstractParser {
 
@@ -29,17 +32,49 @@ public class KinopoiskForumParser extends AbstractParser {
     private final SourcePool sourcePool = SourcePool.getInstance();
     private final MessagePool messagePool = MessagePool.getInstance();
     private final TopicPool topicPool = TopicPool.getInstance();
-
-    public KinopoiskForumParser(String out) {
-        this.out = out;
-    }
-
+    private final DialoguePool dialoguePool = DialoguePool.getInstance();
     @Override
     protected void init(Document document) {
         String url = document.baseUri();
         Source source = sourcePool.putIfNotExists("Kinopoisk", url);
         String title = document.select(TITLE_QUERY).text();
         topic = topicPool.putIfNotExists(source, url, "Кино", title);
+    }
+
+    private Map<TokenType, Function<String, String>> TOKEN_TYPE_PROCESSORS = new HashMap<>();
+
+    {
+        for (TokenType type : TokenType.values()) {
+            if (TokenType.QUOTE.equals(type)){
+                TOKEN_TYPE_PROCESSORS.put(type, (value) -> {
+                    Matcher matcher = HTML_PATTERN.matcher(value);
+                    StringBuilder builder = new StringBuilder();
+                    while (matcher.find() ) {
+                        builder.append(matcher.group()).append("!");
+                    }
+                    String[] tags = builder.toString().split("!");
+                    for (String tag : tags) {
+                        value = value.replaceAll(tag, "");
+                    }
+                    String[] split = value.split(" ");
+                    int numberOfElements = 0;
+                    builder = new StringBuilder();
+                    for (String s : split) {
+                        if (!s.equals(" ") && !s.equals("")) {
+                            if (numberOfElements++ >= 4) {
+                                builder.append(s).append(" ");
+                            }
+                        }
+                    }
+                    return builder.toString();
+                });
+            } else {
+                TOKEN_TYPE_PROCESSORS.put(type, DEFAULT_TOKEN_TYPE_PROCESSOR);
+            }
+        }
+    }
+    public KinopoiskForumParser(String out) {
+        this.out = out;
     }
 
     public void parse(String url) throws IOException {
@@ -54,8 +89,19 @@ public class KinopoiskForumParser extends AbstractParser {
                 Element post = posts.get(currentMessage - 1);
                 Author author = parseAuthor(post);
                 Message message = parseMessage(post, author, currentPage, currentMessage);
-                messagePool.getMessageByText(message.getText(), topic, messagePool.getFirstMessage(topic));
+                if (currentPage == 1 && currentMessage == 1 ) {
+                    dialoguePool.put(message);
+                } else {
+                    dialoguePool.put(
+                            message,
+                            (first, second) ->
+                                    new JaccardSimilarity().apply(first.getText(), second.getText()) > 0.5
+                    );
+                }
+
             }
+            System.out.println("Страница " + currentPage + " проанализирована");
+
         }
     }
 
@@ -77,16 +123,19 @@ public class KinopoiskForumParser extends AbstractParser {
             date = new Date();
         }
         int orderNum = 25 * (pageNumber - 1) + currentPost;
-        Message message = messagePool.put(topic, author, null, textMessage, orderNum, date);
-        split(text.html(), message);
+        Message message = messagePool.put(topic, author, messagePool.getFirstMessage(topic), textMessage, orderNum, date);
+        message = split(text.html(), message);
 
         return message;
     }
 
-    private void split(String html, Message message){
+    private Message split(String html, Message message){
         TokenPool tokenPool = TokenPool.getInstance();
         Map<TokenType, List<Token>> tokens = new HashMap<>();
-        String text = html.replaceAll("<br\\s/>", "").replaceAll("&quot;", "\"").replaceAll("\n","\n ");
+        String text = html
+                .replaceAll("<br\\s/>", "")
+                .replaceAll("&quot;", "\"")
+                .replaceAll("\n"," ");
         for (Map.Entry<TokenType, Pattern> entry : PATTERNS.entrySet()) {
             Pattern pattern = entry.getValue();
             TokenType tokenType = entry.getKey();
@@ -96,7 +145,7 @@ public class KinopoiskForumParser extends AbstractParser {
             while (matcher.find()){
                 Token token = tokenPool.putIfNotExists(tokenType, matcher.group(), message, 1);
                 list.add(token);
-                text = text.replaceFirst(pattern.pattern(), "\\$" + tokenType.represent() + currentTypeIndex++ +"\\$");
+                text = text.replaceFirst(pattern.pattern(), "\\$" + tokenType.code() + currentTypeIndex++ +"\\$ ");
                 tokens.put(tokenType, list);
             }
         }
@@ -118,8 +167,16 @@ public class KinopoiskForumParser extends AbstractParser {
                 int index = Integer.parseInt(String.valueOf(element.charAt(2)));
                 Token token = tokens.get(type).get(index);
                 token.setOrderNumber(orderNum);
+                String newValue = TOKEN_TYPE_PROCESSORS.get(type).apply(token.getValue());
+                token.setValue(newValue);
+                if (type.equals(TokenType.QUOTE)){
+                    Message reference = messagePool.getMessageByText(token.getValue(), topic, messagePool.getFirstMessage(topic));
+                    message.setReference(reference);
+                    message.setText(message.getText().replaceAll(token.getValue(), ""));
+                }
             }
         }
+        return message;
     }
 
     Pattern getCountOfPagesPattern() {

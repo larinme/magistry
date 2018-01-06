@@ -6,11 +6,10 @@ public class Message extends AbstractEntity {
 
     private final Topic topic;
     private final Author author;
-    private final Message reference;
-    private final String text;
+    private Message reference;
+    private String text;
     private final int orderNum;
     private final Date date;
-
     public Message(long id, Topic topic, Author author, Message reference, String text, int orderNum, Date date) {
         super(id);
         this.topic = topic;
@@ -58,5 +57,13 @@ public class Message extends AbstractEntity {
 
     public Date getDate() {
         return date;
+    }
+
+    public void setReference(Message reference) {
+        this.reference = reference;
+    }
+
+    public void setText(String text) {
+        this.text = text;
     }
 }

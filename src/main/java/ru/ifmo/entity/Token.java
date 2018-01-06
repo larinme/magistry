@@ -3,9 +3,9 @@ package ru.ifmo.entity;
 public class Token extends AbstractEntity {
 
     private final TokenType tokenType;
-    private final String value;
     private final Message message;
     private int orderNumber;
+    private String value;
 
     public Token(long id, TokenType tokenType, String value, Message message, int orderNumber) {
         super(id);
@@ -48,5 +48,9 @@ public class Token extends AbstractEntity {
 
     public void setOrderNumber(int orderNumber) {
         this.orderNumber = orderNumber;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
     }
 }

@@ -4,6 +4,7 @@ import ru.ifmo.entity.Dialogue;
 import ru.ifmo.entity.Message;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DialoguePool {
 
@@ -22,23 +23,25 @@ public class DialoguePool {
         return ++nextId;
     }
 
-    public void put(Message message){
-        pool.add(new Dialogue(getNextId()));
-        Collection<Dialogue> dialogues = findDialoguesWithMessage(message);
-
-        for (Dialogue dialogue : dialogues) {
-            dialogue.add(message);
+    public void put(Message message, Contains contains){
+        List<Dialogue> dialogues = pool.stream()
+                .filter((dialogue -> dialogue.containsMessage(message, contains)))
+                .collect(Collectors.toList());
+        if (dialogues.size() > 0) {
+            dialogues.forEach((dialogue -> dialogue.add(message)));
+        } else {
+            put(message);
         }
     }
 
-    private Collection<Dialogue> findDialoguesWithMessage(Message message) {
-        Collection<Dialogue> dialogues = new ArrayList<>();
-        for (Dialogue value : pool) {
-            if (value.containsMessage(message)){
-                dialogues.add(value);
-            }
-        }
-        return dialogues;
+    public Dialogue put(Message message) {
+        Dialogue dialogue = new Dialogue(getNextId());
+        dialogue.add(message);
+        pool.add(dialogue);
+        return dialogue;
     }
 
+    public Set<Dialogue> getPool() {
+        return pool;
+    }
 }

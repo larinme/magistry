@@ -1,5 +1,6 @@
 package ru.ifmo.pools;
 
+import org.apache.commons.text.similarity.JaccardSimilarity;
 import ru.ifmo.entity.Author;
 import ru.ifmo.entity.Message;
 import ru.ifmo.entity.Source;
@@ -34,7 +35,7 @@ public class MessagePool {
 
     public Message getMessageByText(String text, final Topic topic, Message defaultMessage){
         Optional<Message> message = pool.stream()
-                .filter((msg) -> msg.getTopic().equals(topic) && msg.getText().equals(text))
+                .filter((msg) -> msg.getTopic().equals(topic) && new JaccardSimilarity().apply(text, msg.getText()) > 0.7)
                 .findFirst();
         return message.orElse(defaultMessage);
     }
