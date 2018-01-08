@@ -85,10 +85,16 @@ public class KinopoiskForumParser extends AbstractParser {
             System.out.println("Страница  " + currentPage);
             document = Jsoup.connect(url + "&page=" + currentPage).get();
             Elements posts = document.getElementById("posts").getElementsByClass("tborder");
-            for (int currentMessage = 1; currentMessage < posts.size(); currentMessage++) {
+            for (int currentMessage = 1; currentMessage <= posts.size(); currentMessage++) {
                 Element post = posts.get(currentMessage - 1);
                 Author author = parseAuthor(post);
-                Message message = parseMessage(post, author, currentPage, currentMessage);
+                Message message;
+                try {
+                    message = parseMessage(post, author, currentPage, currentMessage);
+                } catch (Exception e) {
+                    throw new RuntimeException("Ошибка возникла при анализе сообщения "
+                            + currentMessage + " на странице " + currentPage, e);
+                }
                 if (currentPage == 1 && currentMessage == 1 ) {
                     dialoguePool.put(message);
                 } else {
@@ -161,7 +167,9 @@ public class KinopoiskForumParser extends AbstractParser {
                     tokenPool.putIfNotExists(TokenType.PLAINT_TEXT, builder.toString(), message, orderNum);
                 }
             } else {
-                tokenPool.putIfNotExists(TokenType.PLAINT_TEXT, builder.toString(), message, orderNum);
+                if (builder.length() > 0) {
+                    tokenPool.putIfNotExists(TokenType.PLAINT_TEXT, builder.toString(), message, orderNum);
+                }
                 builder = new StringBuilder();
                 TokenType type = TokenType.PRESENTERS.get(element.charAt(1));
                 int index = Integer.parseInt(String.valueOf(element.charAt(2)));

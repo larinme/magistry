@@ -15,8 +15,10 @@ public abstract class AbstractParser implements Parser {
     private static final Pattern HASHTAG_PATTERN = Pattern.compile("(\\B(#[a-zA-Z]+\\b)(?!;))");
     private static final Pattern LINK_PATTERN = Pattern.compile("((?i)<a([^>]+)>(.+?)</a>)");
     private static final Pattern QUOTE_PATTERN = Pattern.compile("<div.*Цитата:.*Сообщение\\s*от.*</div>");
+    private static final Pattern EMOTICON_PATTERN = Pattern.compile("<img\\s*src=\"[\\w|/]*.gif\"[\\s*|(\\w*=\"\\w*\")]*/>");
     protected static final Map<TokenType, Pattern> PATTERNS = ImmutableMap.<TokenType, Pattern>builder()
             .put(TokenType.HASH_TAG, HASHTAG_PATTERN)
+            .put(TokenType.EMOTICON, EMOTICON_PATTERN)
             .put(TokenType.LINK, LINK_PATTERN)
             .put(TokenType.QUOTE, QUOTE_PATTERN)
             .build();

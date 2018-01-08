@@ -7,6 +7,9 @@ import ru.ifmo.entity.Source;
 import ru.ifmo.entity.Topic;
 
 import java.util.*;
+import java.util.function.Predicate;
+
+import static java.util.stream.Collectors.toList;
 
 public class MessagePool {
 
@@ -14,7 +17,6 @@ public class MessagePool {
     private Set<Message> pool = new HashSet<>();
     private Map<Topic, Message> startMessages = new HashMap<>();
     private long nextId = 0;
-
     public static MessagePool getInstance() {
         if (instance == null) {
             instance = new MessagePool();
@@ -36,22 +38,27 @@ public class MessagePool {
     public Message getMessageByText(String text, final Topic topic, Message defaultMessage) {
         for (Message message : pool) {
             if (message.getTopic().equals(topic) &&
-                    (new JaccardSimilarity().apply(text, message.getText()) > 0.7)
-                    || message.getText().contains(text.substring(0, 15))) {
+                    (new JaccardSimilarity().apply(text, message.getText()) > 0.8
+                    || message.getText().contains(text.substring(0, 15)))) {
                 return message;
             }
         }
         return defaultMessage;
-        /*Optional<Message> message = pool.stream()
-                .filter((msg) -> msg.getTopic().equals(topic) &&
-                        ( new JaccardSimilarity().apply(text, msg.getText()) > 0.7)
-                        || text.substring(0, 15).startsWith(msg.getText())
-                )
-                .findFirst();
-        return message.orElse(defaultMessage);*/
     }
 
     public Message getFirstMessage(Topic topic) {
         return startMessages.get(topic);
+    }
+
+    public Set<Message> getPool() {
+        return pool;
+    }
+
+    public List<Message> filter(Predicate<Message> predicate){
+        return pool.stream().filter(predicate).collect(toList());
+    }
+
+    public List<Message> sortByOrderNum(){
+        return pool.stream().sorted(Comparator.comparingInt(Message::getOrderNum)).collect(toList());
     }
 }
