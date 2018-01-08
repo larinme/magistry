@@ -94,6 +94,8 @@ public class KinopoiskForumParser extends AbstractParser {
             }
             log.info("The page " + currentPage + " has been parsed");
         }
+
+        List<Message> leafMessages = messagePool.getLeafMessages();
     }
 
     private Author parseAuthor(Element post) {
