@@ -45,4 +45,16 @@ public class Topic extends AbstractEntity {
     public String getTitle() {
         return title;
     }
+
+
+    @Override
+    public String toString() {
+        return "Topic{" +
+                "source=" + source +
+                ", path='" + path + '\'' +
+                ", thema='" + thema + '\'' +
+                ", title='" + title + '\'' +
+                ", id=" + id +
+                '}';
+    }
 }

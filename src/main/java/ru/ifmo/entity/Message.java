@@ -78,4 +78,16 @@ public class Message extends AbstractEntity {
     private void setIsLeaf(boolean list) {
         isLeaf = list;
     }
+
+    @Override
+    public String toString() {
+        return "Message{" +
+                "topic=" + topic +
+                ", author=" + author +
+                ", text='" + text + '\'' +
+                ", orderNum=" + orderNum +
+                ", isLeaf=" + isLeaf +
+                ", id=" + id +
+                '}';
+    }
 }

@@ -55,8 +55,4 @@ public enum TokenType {
     }
 
     public abstract char code();
-
-    public String perform(String value, Function<String, String> function) {
-        return function.apply(value);
-    }
 }

@@ -1,7 +1,6 @@
 package ru.ifmo.parsing.impl;
 
-import com.google.common.collect.ImmutableMap;
-import org.apache.commons.text.similarity.JaccardSimilarity;
+import org.apache.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -17,9 +16,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import static ru.ifmo.pools.MessagePool.ARE_MESSAGES_TEXT_EQUAL;
 
 public class KinopoiskForumParser extends AbstractParser {
 
@@ -34,6 +30,7 @@ public class KinopoiskForumParser extends AbstractParser {
     private final SourcePool sourcePool = SourcePool.getInstance();
     private final MessagePool messagePool = MessagePool.getInstance();
     private final TopicPool topicPool = TopicPool.getInstance();
+    private static final Logger log = Logger.getLogger(KinopoiskForumParser.class);
     @Override
     protected void init(Document document) {
         String url = document.baseUri();
@@ -83,32 +80,34 @@ public class KinopoiskForumParser extends AbstractParser {
         init(document);
         int countOfPages = getCountOfPages(document.html());
         for (int currentPage = 1; currentPage <= countOfPages; currentPage++) {
-            System.out.println("Страница  " + currentPage);
+            log.info("Page analyzing started #" + currentPage);
             document = Jsoup.connect(url + "&page=" + currentPage).get();
             Elements posts = document.getElementById("posts").getElementsByClass("tborder");
             for (int currentMessage = 1; currentMessage <= posts.size(); currentMessage++) {
                 Element post = posts.get(currentMessage - 1);
-                Author author = parseAuthor(post);
                 try {
-                    parseMessage(post, author, currentPage, currentMessage);
+                    parseMessage(post, currentPage, currentMessage);
                 } catch (Exception e) {
-                    throw new RuntimeException("Ошибка возникла при анализе сообщения "
-                            + currentMessage + " на странице " + currentPage, e);
+                    throw new RuntimeException("Error occurred while analyzing message #"
+                            + currentMessage + " on page #" + currentPage, e);
                 }
             }
-            System.out.println("Страница " + currentPage + " проанализирована");
+            log.info("The page " + currentPage + " has been parsed");
         }
     }
 
     private Author parseAuthor(Element post) {
         String authorName = post.select(USERNAME_QUERY).text();
+        log.debug("Author name " + authorName);
         AuthorPool authorPool = AuthorPool.getInstance();
         return authorPool.putIfNotExists(authorName, "");
     }
 
-    private Message parseMessage(Element post, Author author, int pageNumber, int currentPost) {
+    private void parseMessage(Element post, int pageNumber, int currentPost) {
+        Author author = parseAuthor(post);
         long messageId = Long.parseLong(post.id().replace("post", ""));
         String dateString = post.select(DATE_QUERY).get(0).text();
+        log.debug("Post date " + dateString);
         Element text = post.getElementById(POST_QUERY + messageId);
         String textMessage = text.text();
         Date date;
@@ -118,13 +117,13 @@ public class KinopoiskForumParser extends AbstractParser {
             date = new Date();
         }
         int orderNum = 25 * (pageNumber - 1) + currentPost;
+        log.debug("Order number " + orderNum);
         Message message = messagePool.put(topic, author, textMessage, orderNum, date);
-        message = split(text.html(), message);
+        split(text.html(), message);
 
-        return message;
     }
 
-    private Message split(String html, Message message){
+    private void split(String html, Message message){
         TokenPool tokenPool = TokenPool.getInstance();
         Map<TokenType, List<Token>> tokens = new HashMap<>();
         String text = html
@@ -143,11 +142,14 @@ public class KinopoiskForumParser extends AbstractParser {
                 text = text.replaceFirst(pattern.pattern(), "\\$" + tokenType.code() + currentTypeIndex++ +"\\$ ");
                 tokens.put(tokenType, list);
             }
+            log.debug("token type statistic: type " + tokenType + ", elements " + list);
         }
 
+        log.debug("Tokens: " + text);
         String[] split = text.split(" ");
         StringBuilder builder = new StringBuilder();
         int orderNum = 1;
+        log.debug("Token parsing started");
         for (int i = 0; i < split.length; i++) {
             String element = split[i];
             if (!Pattern.compile("\\$\\w\\d\\$").matcher(element).find()){
@@ -157,7 +159,8 @@ public class KinopoiskForumParser extends AbstractParser {
                 }
             } else {
                 if (builder.length() > 0) {
-                    tokenPool.putIfNotExists(TokenType.PLAINT_TEXT, builder.toString(), message, orderNum);
+                    Token textToken = tokenPool.putIfNotExists(TokenType.PLAINT_TEXT, builder.toString(), message, orderNum);
+                    log.debug("Text token " + textToken);
                 }
                 builder = new StringBuilder();
                 TokenType type = TokenType.PRESENTERS.get(element.charAt(1));
@@ -166,14 +169,17 @@ public class KinopoiskForumParser extends AbstractParser {
                 token.setOrderNumber(orderNum);
                 String newValue = TOKEN_TYPE_PROCESSORS.get(type).apply(token.getValue());
                 token.setValue(newValue);
+                log.debug("Token type " + type + "token " + token);
                 if (type.equals(TokenType.QUOTE)){
                     message.setText(text.replaceAll("\\$\\w\\d\\$", ""));
                     Message reference = messagePool.getMessageByText(token.getValue(), topic, messagePool.getFirstMessage(topic));
                     message.setReference(reference);
+                    log.debug("Reference " + reference);
                 }
             }
         }
-        return message;
+        log.debug("Token parsing ended");
+
     }
 
     Pattern getCountOfPagesPattern() {

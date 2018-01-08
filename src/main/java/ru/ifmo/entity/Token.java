@@ -53,4 +53,15 @@ public class Token extends AbstractEntity {
     public void setValue(String value) {
         this.value = value;
     }
+
+    @Override
+    public String toString() {
+        return "Token{" +
+                "tokenType=" + tokenType +
+                ", message=" + message +
+                ", orderNumber=" + orderNumber +
+                ", value='" + value + '\'' +
+                ", id=" + id +
+                '}';
+    }
 }
