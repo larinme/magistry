@@ -13,7 +13,7 @@ public class MessagePool {
 
     private static final Equals<String> ARE_MESSAGES_TEXT_EQUAL = (src, object) ->
             new JaccardSimilarity().apply(src, object) > 0.8
-                    || object.contains(src.substring(0, 15));
+                    || object.contains(src.substring(0, Math.min(src.length(), 15)));
     private static MessagePool instance = new MessagePool();
     private Set<Message> pool = new HashSet<>();
     private Map<Topic, Message> startMessages = new HashMap<>();
@@ -59,4 +59,13 @@ public class MessagePool {
         return pool.stream().filter(msg -> msg.isLeaf() && msg.getDialogueLength() > 1).collect(toList());
     }
 
+    public int clear(final int range) {
+        pool.removeIf(
+                        msg -> msg.getOrderNum() > 1
+                                && msg.getOrderNum() < range
+                                && msg.isLeaf()
+                                && msg.getReference() == null
+        );
+        return pool.size();
+    }
 }

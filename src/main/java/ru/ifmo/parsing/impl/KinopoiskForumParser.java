@@ -100,6 +100,10 @@ public class KinopoiskForumParser extends AbstractParser {
             }
 
             log.info("The page " + currentPage + " has been parsed");
+            if (currentPage % 10 == 0) {
+                int poolVolume = messagePool.clear(25*(currentPage - 3));
+                log.info("Pool size = " + poolVolume);
+            }
         }
         writeInFile();
 
