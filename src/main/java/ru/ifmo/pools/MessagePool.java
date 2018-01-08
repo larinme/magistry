@@ -6,19 +6,18 @@ import ru.ifmo.entity.Message;
 import ru.ifmo.entity.Topic;
 
 import java.util.*;
-import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.toList;
 
 public class MessagePool {
 
+    private static final Equals<String> ARE_MESSAGES_TEXT_EQUAL = (src, object) ->
+            new JaccardSimilarity().apply(src, object) > 0.8
+                    || object.contains(src.substring(0, 15));
     private static MessagePool instance = new MessagePool();
     private Set<Message> pool = new HashSet<>();
     private Map<Topic, Message> startMessages = new HashMap<>();
     private long nextId = 0;
-    public static final Equals<String> ARE_MESSAGES_TEXT_EQUAL = (src, object) ->
-            new JaccardSimilarity().apply(src, object) > 0.8
-            || object.contains(src.substring(0, 15));
 
     public static MessagePool getInstance() {
         if (instance == null) {
@@ -56,8 +55,8 @@ public class MessagePool {
         return pool;
     }
 
-    public List<Message> getLeafMessages(){
-        return pool.stream().filter(Message::isLeaf).collect(toList());
+    public List<Message> getLeafMessages() {
+        return pool.stream().filter(msg -> msg.isLeaf() && msg.getDialogueLength() > 1).collect(toList());
     }
 
 }

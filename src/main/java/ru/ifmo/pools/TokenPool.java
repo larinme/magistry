@@ -1,8 +1,11 @@
 package ru.ifmo.pools;
 
-import ru.ifmo.entity.*;
+import ru.ifmo.entity.Message;
+import ru.ifmo.entity.Token;
+import ru.ifmo.entity.TokenType;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 public class TokenPool {
 

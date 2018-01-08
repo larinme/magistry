@@ -3,7 +3,8 @@ package ru.ifmo.pools;
 import ru.ifmo.entity.Source;
 import ru.ifmo.entity.Topic;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 public class TopicPool {
 

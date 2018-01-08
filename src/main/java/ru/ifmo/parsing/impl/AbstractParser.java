@@ -12,6 +12,8 @@ import java.util.regex.Pattern;
 
 public abstract class AbstractParser implements Parser {
 
+    protected static final Function<String, String> DEFAULT_TOKEN_TYPE_PROCESSOR = value -> value;
+    protected static final Pattern HTML_PATTERN = Pattern.compile("<[^>]*>");
     private static final Pattern HASHTAG_PATTERN = Pattern.compile("(\\B(#[a-zA-Z]+\\b)(?!;))");
     private static final Pattern LINK_PATTERN = Pattern.compile("((?i)<a([^>]+)>(.+?)</a>)");
     private static final Pattern QUOTE_PATTERN = Pattern.compile("<div.*Цитата:.*Сообщение\\s*от.*</div>");
@@ -22,8 +24,7 @@ public abstract class AbstractParser implements Parser {
             .put(TokenType.LINK, LINK_PATTERN)
             .put(TokenType.QUOTE, QUOTE_PATTERN)
             .build();
-    protected static final Function<String, String> DEFAULT_TOKEN_TYPE_PROCESSOR = value -> value;
-    protected static final Pattern HTML_PATTERN = Pattern.compile("<[^>]*>");
+
     abstract Pattern getCountOfPagesPattern();
 
     protected void init(Document document) {

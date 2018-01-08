@@ -38,6 +38,10 @@ public class Token extends AbstractEntity {
         return value;
     }
 
+    public void setValue(String value) {
+        this.value = value;
+    }
+
     public Message getMessage() {
         return message;
     }
@@ -48,10 +52,6 @@ public class Token extends AbstractEntity {
 
     public void setOrderNumber(int orderNumber) {
         this.orderNumber = orderNumber;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
     }
 
     @Override
