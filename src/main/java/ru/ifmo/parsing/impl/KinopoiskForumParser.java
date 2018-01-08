@@ -19,6 +19,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static ru.ifmo.pools.MessagePool.ARE_MESSAGES_TEXT_EQUAL;
+
 public class KinopoiskForumParser extends AbstractParser {
 
     private static final String TITLE_QUERY = ".navbar > strong";
@@ -32,7 +34,6 @@ public class KinopoiskForumParser extends AbstractParser {
     private final SourcePool sourcePool = SourcePool.getInstance();
     private final MessagePool messagePool = MessagePool.getInstance();
     private final TopicPool topicPool = TopicPool.getInstance();
-    private final DialoguePool dialoguePool = DialoguePool.getInstance();
     @Override
     protected void init(Document document) {
         String url = document.baseUri();
@@ -88,26 +89,14 @@ public class KinopoiskForumParser extends AbstractParser {
             for (int currentMessage = 1; currentMessage <= posts.size(); currentMessage++) {
                 Element post = posts.get(currentMessage - 1);
                 Author author = parseAuthor(post);
-                Message message;
                 try {
-                    message = parseMessage(post, author, currentPage, currentMessage);
+                    parseMessage(post, author, currentPage, currentMessage);
                 } catch (Exception e) {
                     throw new RuntimeException("Ошибка возникла при анализе сообщения "
                             + currentMessage + " на странице " + currentPage, e);
                 }
-                if (currentPage == 1 && currentMessage == 1 ) {
-                    dialoguePool.put(message);
-                } else {
-                    dialoguePool.put(
-                            message,
-                            (first, second) ->
-                                    new JaccardSimilarity().apply(first.getText(), second.getText()) > 0.5 || first.getText().startsWith(second.getText())
-                    );
-                }
-
             }
             System.out.println("Страница " + currentPage + " проанализирована");
-
         }
     }
 
@@ -129,7 +118,7 @@ public class KinopoiskForumParser extends AbstractParser {
             date = new Date();
         }
         int orderNum = 25 * (pageNumber - 1) + currentPost;
-        Message message = messagePool.put(topic, author, messagePool.getFirstMessage(topic), textMessage, orderNum, date);
+        Message message = messagePool.put(topic, author, textMessage, orderNum, date);
         message = split(text.html(), message);
 
         return message;

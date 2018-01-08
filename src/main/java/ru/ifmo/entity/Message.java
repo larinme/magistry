@@ -10,16 +10,15 @@ public class Message extends AbstractEntity {
     private String text;
     private final int orderNum;
     private final Date date;
-    public Message(long id, Topic topic, Author author, Message reference, String text, int orderNum, Date date) {
+    private boolean isLeaf = true;
+    public Message(long id, Topic topic, Author author, String text, int orderNum, Date date) {
         super(id);
         this.topic = topic;
         this.author = author;
-        this.reference = reference;
         this.text = text;
         this.orderNum = orderNum;
         this.date = date;
     }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -61,9 +60,22 @@ public class Message extends AbstractEntity {
 
     public void setReference(Message reference) {
         this.reference = reference;
+        setIsLeaf(true);
+        if (reference != null) {
+            reference.setIsLeaf(false);
+        }
     }
+
 
     public void setText(String text) {
         this.text = text;
+    }
+
+    public boolean isLeaf() {
+        return isLeaf;
+    }
+
+    private void setIsLeaf(boolean list) {
+        isLeaf = list;
     }
 }
