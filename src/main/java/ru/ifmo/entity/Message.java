@@ -6,16 +6,16 @@ public class Message extends AbstractEntity {
 
     private final Topic topic;
     private final Author author;
-    private final Message reference;
-    private final String text;
     private final int orderNum;
     private final Date date;
+    private Message reference;
+    private String text;
+    private boolean isLeaf = true;
 
-    public Message(long id, Topic topic, Author author, Message reference, String text, int orderNum, Date date) {
+    public Message(long id, Topic topic, Author author, String text, int orderNum, Date date) {
         super(id);
         this.topic = topic;
         this.author = author;
-        this.reference = reference;
         this.text = text;
         this.orderNum = orderNum;
         this.date = date;
@@ -48,8 +48,20 @@ public class Message extends AbstractEntity {
         return reference;
     }
 
+    public void setReference(Message reference) {
+        this.reference = reference;
+        setIsLeaf(true);
+        if (reference != null) {
+            reference.setIsLeaf(false);
+        }
+    }
+
     public String getText() {
         return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
     }
 
     public int getOrderNum() {
@@ -58,5 +70,35 @@ public class Message extends AbstractEntity {
 
     public Date getDate() {
         return date;
+    }
+
+    public int getDialogueLength() {
+        Message currentMessage = this;
+        int dialogueLength = 0;
+        while (currentMessage != null) {
+            dialogueLength++;
+            currentMessage = currentMessage.getReference();
+        }
+        return dialogueLength;
+    }
+
+    public boolean isLeaf() {
+        return isLeaf;
+    }
+
+    private void setIsLeaf(boolean list) {
+        isLeaf = list;
+    }
+
+    @Override
+    public String toString() {
+        return "Message{" +
+                "topic=" + topic +
+                ", author=" + author +
+                ", text='" + text + '\'' +
+                ", orderNum=" + orderNum +
+                ", isLeaf=" + isLeaf +
+                ", id=" + id +
+                '}';
     }
 }

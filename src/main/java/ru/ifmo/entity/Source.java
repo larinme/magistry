@@ -33,4 +33,13 @@ public class Source extends AbstractEntity {
     public int hashCode() {
         return (int) (id ^ (id >>> 32));
     }
+
+    @Override
+    public String toString() {
+        return "Source{" +
+                "name='" + name + '\'' +
+                ", url='" + url + '\'' +
+                ", id=" + id +
+                '}';
+    }
 }
