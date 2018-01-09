@@ -182,7 +182,7 @@ public class KinopoiskForumParser extends AbstractParser {
             while (matcher.find()) {
                 Token token = tokenPool.putIfNotExists(tokenType, matcher.group(), message, 1);
                 list.add(token);
-                text = text.replaceFirst(pattern.pattern(), "\\$" + tokenType.code() + currentTypeIndex++ + "\\$ ");
+                text = text.replaceFirst(pattern.pattern(), " \\$" + tokenType.code() + currentTypeIndex++ + "\\$ ");
                 tokens.put(tokenType, list);
             }
             log.debug("token type statistic: type " + tokenType + ", elements " + list);
