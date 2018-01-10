@@ -86,7 +86,10 @@ public class KinopoiskForumParser extends AbstractParser {
         int countOfPages = getCountOfPages(document.html());
         for (int currentPage = 1; currentPage <= countOfPages; currentPage++) {
             log.info("Page analyzing started #" + currentPage);
+            long startLoadingTime = System.currentTimeMillis();
             document = Jsoup.connect(url + "&page=" + currentPage).get();
+            long endLoadingTime = System.currentTimeMillis();
+            log.info("Page has loaded. System spent " + (endLoadingTime - startLoadingTime) + " ms");
             Elements posts = document.getElementById("posts").getElementsByClass("tborder");
             for (int currentMessage = 1; currentMessage <= posts.size(); currentMessage++) {
                 Element post = posts.get(currentMessage - 1);
