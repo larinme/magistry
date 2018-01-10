@@ -93,21 +93,23 @@ public abstract class AbstractParser implements Parser {
             document = Jsoup.connect(url + "&" + getPageNumberParameter() + "=" + currentPage).get();
             long endLoadingTime = System.currentTimeMillis();
             log.info("Page has loaded. System spent " + (endLoadingTime - startLoadingTime) + " ms");
-            Elements posts = getPosts(document);
-            for (int currentMessage = 1; currentMessage <= posts.size(); currentMessage++) {
-                Element post = posts.get(currentMessage - 1);
-                try {
-                    parseMessage(post, currentPage, currentMessage);
-                } catch (Exception e) {
-                    throw new RuntimeException("Error occurred while analyzing message #"
-                            + currentMessage + " on page #" + currentPage, e);
-                }
-            }
-
+            parsePostsOnPage(getPosts(document), currentPage);
             log.info("The page " + currentPage + " has been parsed");
 
             removeSingleMessages(currentPage);
             removeDialogues(currentPage);
+        }
+    }
+
+    protected void parsePostsOnPage(Elements posts, int currentPage) {
+        for (int currentMessage = 1; currentMessage <= posts.size(); currentMessage++) {
+            Element post = posts.get(currentMessage - 1);
+            try {
+                parseMessage(post, currentPage, currentMessage);
+            } catch (Exception e) {
+                throw new RuntimeException("Error occurred while analyzing message #"
+                        + currentMessage + " on page #" + currentPage, e);
+            }
         }
     }
 
