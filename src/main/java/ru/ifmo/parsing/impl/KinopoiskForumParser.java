@@ -72,7 +72,7 @@ public class KinopoiskForumParser extends AbstractParser {
     }
 
     @Override
-    Pattern getCountOfPagesPattern() {
+    public Pattern getCountOfPagesPattern() {
         return COUNT_OF_PAGES_PATTERN;
     }
 
@@ -82,7 +82,7 @@ public class KinopoiskForumParser extends AbstractParser {
     }
 
     @Override
-    String getThema() {
+    public String getThema() {
         return THEMA_NAME;
     }
 
@@ -92,17 +92,17 @@ public class KinopoiskForumParser extends AbstractParser {
     }
 
     @Override
-    String getAuthorQuery() {
+    public String getAuthorQuery() {
         return USERNAME_QUERY;
     }
 
     @Override
-    Map<TokenType, Function<String, String>> getTokenTypeProcessor() {
+    public Map<TokenType, Function<String, String>> getTokenTypeProcessor() {
         return TOKEN_TYPE_PROCESSORS;
     }
 
     @Override
-    DateFormat getDateFormat() {
+    public DateFormat getDateFormat() {
         return format;
     }
 
@@ -117,12 +117,12 @@ public class KinopoiskForumParser extends AbstractParser {
     }
 
     @Override
-    String getPageNumberParameter() {
+    public String getPageNumberParameter() {
         return PAGE_NUMBER_PARAMETER;
     }
 
     @Override
-    Elements getPosts(Document document) {
+    public Elements getPosts(Document document) {
         return document.getElementById(POSTS_CONTAINER).getElementsByClass("tborder");
     }
 }

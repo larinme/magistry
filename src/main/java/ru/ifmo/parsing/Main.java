@@ -33,6 +33,7 @@ public class Main {
     }
 
     public static void main(String[] args) throws IOException {
+
         log.info("Start application");
         try {
             run();
