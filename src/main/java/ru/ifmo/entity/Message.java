@@ -1,6 +1,8 @@
 package ru.ifmo.entity;
 
+import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedList;
 
 public class Message extends AbstractEntity {
 
@@ -73,13 +75,16 @@ public class Message extends AbstractEntity {
     }
 
     public int getDialogueLength() {
+        return buildDialogueHierarchy().size();
+    }
+
+    public Collection<Message> buildDialogueHierarchy(){
+        Collection<Message> messages = new LinkedList<>();
         Message currentMessage = this;
-        int dialogueLength = 0;
         while (currentMessage != null) {
-            dialogueLength++;
             currentMessage = currentMessage.getReference();
         }
-        return dialogueLength;
+        return messages;
     }
 
     public boolean isLeaf() {

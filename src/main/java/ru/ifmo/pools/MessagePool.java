@@ -63,7 +63,6 @@ public class MessagePool {
     }
 
     public int clear(final int range) {
-        //TODO: remove tokens
         List<Message> messages = pool.stream()
                 .filter(
                         msg -> msg.getOrderNum() > 1
@@ -74,5 +73,18 @@ public class MessagePool {
         TokenPool.getInstance().remove(messages);
         pool.removeAll(messages);
         return pool.size();
+    }
+
+    public void remove(Message message, Topic topic){
+        Collection<Message> messages = message.buildDialogueHierarchy();
+        messages.remove(startMessages.get(topic));
+        pool.removeAll(messages);
+        TokenPool.getInstance().remove(messages);
+    }
+
+    public void remove(Collection<Message> messages, Topic topic){
+        for (Message currentMessage : messages) {
+            remove(currentMessage, topic);
+        }
     }
 }
