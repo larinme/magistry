@@ -13,7 +13,8 @@ import java.util.Properties;
 
 public class Main {
 
-    private static final String OUT = "dialogues/result.txt";
+    private static final String BASE_DIR = System.getProperty("user.dir");
+    private static final String OUT = BASE_DIR + "/dialogues/result.txt";
     private static final Logger log = Logger.getLogger(Main.class);
     private static Properties properties = new Properties();
 
@@ -26,7 +27,7 @@ public class Main {
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
-        File file = new File(OUT);
+        File file = new File(BASE_DIR + OUT);
         boolean isDeleted = file.delete();
         log.debug("Output directory was deleted " + isDeleted);
     }

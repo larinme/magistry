@@ -4,8 +4,12 @@ import ru.ifmo.entity.Message;
 import ru.ifmo.entity.Token;
 import ru.ifmo.entity.TokenType;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+
+import static java.util.stream.Collectors.toList;
 
 public class TokenPool {
 
@@ -42,6 +46,11 @@ public class TokenPool {
             }
         }
         return null;
+    }
+
+    public void remove(Collection<Message> messages){
+        List<Token> tokens = pool.stream().filter(msg -> messages.contains(msg.getMessage())).collect(toList());
+        pool.removeAll(tokens);
     }
 
 }

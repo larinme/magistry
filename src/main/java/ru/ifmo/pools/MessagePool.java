@@ -56,16 +56,23 @@ public class MessagePool {
     }
 
     public List<Message> getLeafMessages() {
-        return pool.stream().filter(msg -> msg.isLeaf() && msg.getDialogueLength() > 1).collect(toList());
+        return pool.stream()
+                .filter(msg -> msg.isLeaf() && msg.getDialogueLength() > 3)
+                .sorted(Comparator.comparingInt(Message::getOrderNum))
+                .collect(toList());
     }
 
     public int clear(final int range) {
-        pool.removeIf(
+        //TODO: remove tokens
+        List<Message> messages = pool.stream()
+                .filter(
                         msg -> msg.getOrderNum() > 1
                                 && msg.getOrderNum() < range
                                 && msg.isLeaf()
-                                && msg.getReference() == null
-        );
+                                && msg.getReference() == null)
+                .collect(toList());
+        TokenPool.getInstance().remove(messages);
+        pool.removeAll(messages);
         return pool.size();
     }
 }

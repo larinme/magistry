@@ -110,11 +110,15 @@ public class KinopoiskForumParser extends AbstractParser {
     }
 
     private void writeInFile() throws IOException {
-        log.info("Total messages after " + topic + " analyzing is " + messagePool.getPool());
+        log.info("Total messages after " + topic + " analyzing is  " + messagePool.getPool().size());
         List<Message> leafMessages = messagePool.getLeafMessages();
         log.info("Total count of dialogues is " + leafMessages.size());
 
         File file = new File(out);
+        if (!file.exists()){
+            boolean newFileCreated = file.createNewFile();
+            log.info("New file Created" + newFileCreated);
+        }
         for (Message leafMessage : leafMessages) {
             List<String> dialogue = buildDialogue(leafMessage);
             StringBuilder builder = new StringBuilder();
@@ -136,7 +140,12 @@ public class KinopoiskForumParser extends AbstractParser {
             dialogues.add(reference);
             reference = reference.getReference();
         }
-        return dialogues.stream().map(Message::getText).collect(Collectors.toList());
+        int startOrderNum = messagePool.getFirstMessage(topic).getOrderNum();
+        return dialogues.stream()
+                .filter(
+                        msg -> msg.getOrderNum() > startOrderNum)
+                .map(Message::getText)
+                .collect(Collectors.toList());
     }
 
     private Author parseAuthor(Element post) {
@@ -207,18 +216,19 @@ public class KinopoiskForumParser extends AbstractParser {
                 }
                 builder = new StringBuilder();
                 TokenType type = TokenType.PRESENTERS.get(element.charAt(1));
+                log.debug("Token type " + type);
                 int index = Integer.parseInt(String.valueOf(element.charAt(2)));
                 Token token = tokens.get(type).get(index);
                 token.setOrderNumber(orderNum);
                 String newValue = TOKEN_TYPE_PROCESSORS.get(type).apply(token.getValue());
                 token.setValue(newValue);
-                log.debug("Token type " + type + "token " + token);
                 if (type.equals(TokenType.QUOTE)) {
                     message.setText(text.replaceAll("\\$\\w\\d\\$", ""));
                     Message reference = messagePool.getMessageByText(token.getValue(), topic, messagePool.getFirstMessage(topic));
                     message.setReference(reference);
                     log.debug("Reference " + reference);
                 }
+                log.debug("Token " + token);
             }
         }
         log.debug("Token parsing ended");
