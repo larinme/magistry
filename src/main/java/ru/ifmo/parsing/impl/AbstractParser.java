@@ -47,8 +47,7 @@ public abstract class AbstractParser implements Parser {
             .put("&quot;", "\"")
             .put("\n", " ")
             .build();
-    private static final Logger log = Logger.getLogger(KinopoiskForumParser.class);
-
+    private static final Logger LOG = Logger.getLogger(AbstractParser.class);
 
     abstract Pattern getCountOfPagesPattern();
 
@@ -88,16 +87,16 @@ public abstract class AbstractParser implements Parser {
         init(document);
         int countOfPages = getCountOfPages(document.html());
         for (int currentPage = 1; currentPage <= countOfPages; currentPage++) {
-            log.info("Page analyzing started #" + currentPage);
+            LOG.info("Page analyzing started #" + currentPage);
             long startLoadingTime = System.currentTimeMillis();
             document = Jsoup.connect(url + "&" + getPageNumberParameter() + "=" + currentPage).get();
             long endLoadingTime = System.currentTimeMillis();
-            log.info("Page has loaded. System spent " + (endLoadingTime - startLoadingTime) + " ms");
+            LOG.trace("Page has loaded. System spent " + (endLoadingTime - startLoadingTime) + " ms");
             parsePostsOnPage(getPosts(document), currentPage);
-            log.info("The page " + currentPage + " has been parsed");
+            LOG.info("The page " + currentPage + " has been parsed");
 
             removeSingleMessages(currentPage);
-            removeDialogues(currentPage);
+            flushDialogues(currentPage);
         }
     }
 
@@ -105,7 +104,10 @@ public abstract class AbstractParser implements Parser {
         for (int currentMessage = 1; currentMessage <= posts.size(); currentMessage++) {
             Element post = posts.get(currentMessage - 1);
             try {
+                long startTime = System.currentTimeMillis();
                 parseMessage(post, currentPage, currentMessage);
+                long endTime = System.currentTimeMillis();
+                LOG.trace("Message was parsed for " + (endTime - startTime));
             } catch (Exception e) {
                 throw new RuntimeException("Error occurred while analyzing message #"
                         + currentMessage + " on page #" + currentPage, e);
@@ -117,7 +119,7 @@ public abstract class AbstractParser implements Parser {
         Author author = parseAuthor(post);
         long messageId = Long.parseLong(post.id().replace("post", ""));
         String dateString = post.select(getDateQuery()).get(0).text();
-        log.debug("Post date " + dateString);
+        LOG.debug("Post date " + dateString);
         Element text = post.getElementById(getPostQuery() + messageId);
         String textMessage = text.text();
         Date date;
@@ -127,7 +129,7 @@ public abstract class AbstractParser implements Parser {
             date = new Date();
         }
         int orderNum = 25 * (pageNumber - 1) + currentPost;
-        log.debug("Order number " + orderNum);
+        LOG.debug("Order number " + orderNum);
         Message message = messagePool.put(topic, author, textMessage, orderNum, date);
         split(text.html(), message);
 
@@ -135,10 +137,10 @@ public abstract class AbstractParser implements Parser {
 
     protected void writeInFile(List<Message> leafMessages) throws IOException {
         File file = new File(out);
-        log.info("start writing in file " + out);
+        LOG.info("start writing in file " + out);
         if (!file.exists()) {
             boolean newFileCreated = file.createNewFile();
-            log.info("New file Created" + newFileCreated);
+            LOG.info("New file Created" + newFileCreated);
         }
         for (Message leafMessage : leafMessages) {
             List<String> dialogue = buildDialogue(leafMessage);
@@ -148,18 +150,23 @@ public abstract class AbstractParser implements Parser {
             }
             Files.append(joiner.toString() + "\n\n", file, Charsets.UTF_8);
         }
-        log.info("Writing in file " + out + " finished");
+        LOG.info("Writing in file " + out + " finished");
     }
 
     protected void split(String html, Message message) {
         Map<TokenType, List<Token>> tokens = new HashMap<>();
-
         String text = cleanMessage(html);
+        long startTime = System.currentTimeMillis();
         text = substituteTokens(message, tokens, text);
+        long endTime = System.currentTimeMillis();
+        LOG.trace("Token substitution took " + (endTime - startTime));
 
-        log.debug("Tokens: " + text);
+        LOG.debug("Tokens: " + text);
+        startTime = System.currentTimeMillis();
         performTokenAnalyzing(message, tokens, text);
-        log.debug("Token parsing ended");
+        endTime = System.currentTimeMillis();
+        LOG.trace("Token substitution took " + (endTime - startTime));
+        LOG.debug("Token parsing ended");
 
     }
 
@@ -167,7 +174,8 @@ public abstract class AbstractParser implements Parser {
         String[] split = text.split(" ");
         StringBuilder builder = new StringBuilder();
         int orderNum = 1;
-        log.debug("Token parsing started");
+        LOG.debug("Token parsing started");
+
         for (int i = 0; i < split.length; i++) {
             String element = split[i];
             if (!Pattern.compile("\\$\\w\\d\\$").matcher(element).find()) {
@@ -178,11 +186,11 @@ public abstract class AbstractParser implements Parser {
             } else {
                 if (builder.length() > 0) {
                     Token textToken = tokenPool.putIfNotExists(TokenType.PLAINT_TEXT, builder.toString(), message, orderNum);
-                    log.debug("Text token " + textToken);
+                    LOG.debug("Text token " + textToken);
                 }
                 builder = new StringBuilder();
                 TokenType type = TokenType.PRESENTERS.get(element.charAt(1));
-                log.debug("Token type " + type);
+                LOG.debug("Token type " + type);
                 int index = Integer.parseInt(String.valueOf(element.charAt(2)));
                 Token token = tokens.get(type).get(index);
                 token.setOrderNumber(orderNum);
@@ -193,9 +201,9 @@ public abstract class AbstractParser implements Parser {
                     message.setText(text.replaceAll("\\$\\w\\d\\$", ""));
                     Message reference = messagePool.getMessageByText(token.getValue(), topic, messagePool.getFirstMessage(topic));
                     message.setReference(reference);
-                    log.debug("Reference " + reference);
+                    LOG.debug("Reference " + reference);
                 }
-                log.debug("Token " + token);
+                LOG.debug("Token " + token);
             }
         }
     }
@@ -213,7 +221,7 @@ public abstract class AbstractParser implements Parser {
                 text = text.replaceFirst(pattern.pattern(), " \\$" + tokenType.code() + currentTypeIndex++ + "\\$ ");
                 tokens.put(tokenType, list);
             }
-            log.debug("token type statistic: type " + tokenType + ", elements " + list);
+            LOG.debug("token type statistic: type " + tokenType + ", elements " + list);
         }
         return text;
     }
@@ -256,26 +264,39 @@ public abstract class AbstractParser implements Parser {
 
     private Author parseAuthor(Element post) {
         String authorName = post.select(getAuthorQuery()).text();
-        log.debug("Author name " + authorName);
+        LOG.debug("Author name " + authorName);
         AuthorPool authorPool = AuthorPool.getInstance();
         return authorPool.putIfNotExists(authorName, "");
     }
 
-    private void removeDialogues(int currentPage) throws IOException {
+    private void flushDialogues(int currentPage) throws IOException {
         if ((currentPage - 5) % 50 == 0) {
-            log.info("Total messages after " + topic + " analyzing is  " + messagePool.getPool().size());
+            LOG.info("Total messages after " + topic + " analyzing is  " + messagePool.getPool().size());
+            long startLoadingTime = System.currentTimeMillis();
             List<Message> leafMessages = messagePool.getLeafMessages();
-            log.info("Total count of dialogues is " + leafMessages.size());
+            long endLoadingTime = System.currentTimeMillis();
+            LOG.trace("Leaf message searching " + (endLoadingTime - startLoadingTime) + " ms");
+            LOG.info("Total count of dialogues is " + leafMessages.size());
 
+            startLoadingTime = System.currentTimeMillis();
             writeInFile(leafMessages);
+            endLoadingTime = System.currentTimeMillis();
+            LOG.trace("Flushing took " + (endLoadingTime - startLoadingTime) + " ms");
+
+            startLoadingTime = System.currentTimeMillis();
             messagePool.remove(leafMessages, topic);
+            endLoadingTime = System.currentTimeMillis();
+            LOG.trace("Removing flushed messages " + (endLoadingTime - startLoadingTime) + " ms");
         }
     }
 
     private void removeSingleMessages(int currentPage) {
         if (currentPage % 10 == 0) {
+            long startLoadingTime = System.currentTimeMillis();
             int poolVolume = messagePool.clear(25 * (currentPage - 3));
-            log.info("Pool size = " + poolVolume);
+            long endLoadingTime = System.currentTimeMillis();
+            LOG.trace("Single messages removing took " + (endLoadingTime - startLoadingTime) + " ms");
+            LOG.info("Pool size = " + poolVolume);
         }
     }
 }

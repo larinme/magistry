@@ -82,6 +82,7 @@ public class Message extends AbstractEntity {
         Collection<Message> messages = new LinkedList<>();
         Message currentMessage = this;
         while (currentMessage != null) {
+            messages.add(currentMessage);
             currentMessage = currentMessage.getReference();
         }
         return messages;
