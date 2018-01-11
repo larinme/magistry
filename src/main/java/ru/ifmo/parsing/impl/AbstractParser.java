@@ -135,24 +135,6 @@ public abstract class AbstractParser implements Parser {
 
     }
 
-    protected void writeInFile(List<Message> leafMessages) throws IOException {
-        File file = new File(out);
-        LOG.info("start writing in file " + out);
-        if (!file.exists()) {
-            boolean newFileCreated = file.createNewFile();
-            LOG.info("New file Created" + newFileCreated);
-        }
-        for (Message leafMessage : leafMessages) {
-            List<String> dialogue = buildDialogue(leafMessage);
-            StringJoiner joiner = new StringJoiner("\n->");
-            for (String dialogueText : dialogue) {
-                joiner.add(dialogueText);
-            }
-            Files.append(joiner.toString() + "\n\n", file, Charsets.UTF_8);
-        }
-        LOG.info("Writing in file " + out + " finished");
-    }
-
     protected void split(String html, Message message) {
         Map<TokenType, List<Token>> tokens = new HashMap<>();
         String text = cleanMessage(html);
@@ -234,21 +216,6 @@ public abstract class AbstractParser implements Parser {
         return cleanText;
     }
 
-    private List<String> buildDialogue(Message leafMessage) {
-        Set<Message> dialogues = new TreeSet<>(Comparator.comparingInt(Message::getOrderNum));
-        Message reference = leafMessage;
-        while (reference != null) {
-            dialogues.add(reference);
-            reference = reference.getReference();
-        }
-        int startOrderNum = messagePool.getFirstMessage(topic).getOrderNum();
-        return dialogues.stream()
-                .filter(
-                        msg -> msg.getOrderNum() > startOrderNum)
-                .map(Message::getText)
-                .collect(Collectors.toList());
-    }
-
     private int getCountOfPages(String html) {
         Pattern pattern = getCountOfPagesPattern();
         Matcher matcher = pattern.matcher(html);
@@ -267,6 +234,16 @@ public abstract class AbstractParser implements Parser {
         LOG.debug("Author name " + authorName);
         AuthorPool authorPool = AuthorPool.getInstance();
         return authorPool.putIfNotExists(authorName, "");
+    }
+
+    private void removeSingleMessages(int currentPage) {
+        if (currentPage % 10 == 0) {
+            long startLoadingTime = System.currentTimeMillis();
+            int poolVolume = messagePool.clear(25 * (currentPage - 3));
+            long endLoadingTime = System.currentTimeMillis();
+            LOG.trace("Single messages removing took " + (endLoadingTime - startLoadingTime) + " ms");
+            LOG.info("Pool size = " + poolVolume);
+        }
     }
 
     private void flushDialogues(int currentPage) throws IOException {
@@ -290,13 +267,37 @@ public abstract class AbstractParser implements Parser {
         }
     }
 
-    private void removeSingleMessages(int currentPage) {
-        if (currentPage % 10 == 0) {
-            long startLoadingTime = System.currentTimeMillis();
-            int poolVolume = messagePool.clear(25 * (currentPage - 3));
-            long endLoadingTime = System.currentTimeMillis();
-            LOG.trace("Single messages removing took " + (endLoadingTime - startLoadingTime) + " ms");
-            LOG.info("Pool size = " + poolVolume);
+    protected void writeInFile(List<Message> leafMessages) throws IOException {
+        File file = new File(out);
+        LOG.info("start writing in file " + out);
+        if (!file.exists()) {
+            boolean newFileCreated = file.createNewFile();
+            LOG.info("New file Created" + newFileCreated);
         }
+        for (Message leafMessage : leafMessages) {
+            Collection<Message> dialogue = buildDialogue(leafMessage);
+            if (dialogue.size() <= 3) {
+                continue;
+            }
+            int startOrderNum = messagePool.getFirstMessage(topic).getOrderNum();
+            StringJoiner joiner = new StringJoiner("\n->");
+            for (Message message : dialogue) {
+                if (message.getOrderNum() > startOrderNum) {
+                    joiner.add(message.getText());
+                }
+            }
+            Files.append(joiner.toString() + "\n\n", file, Charsets.UTF_8);
+        }
+        LOG.info("Writing in file " + out + " finished");
+    }
+
+    private Collection<Message> buildDialogue(Message leafMessage) {
+        Set<Message> dialogues = new TreeSet<>(Comparator.comparingInt(Message::getOrderNum));
+        Message reference = leafMessage;
+        while (reference != null) {
+            dialogues.add(reference);
+            reference = reference.getReference();
+        }
+        return  dialogues;
     }
 }

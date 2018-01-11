@@ -57,7 +57,7 @@ public class MessagePool {
 
     public List<Message> getLeafMessages() {
         return pool.stream()
-                .filter(msg -> msg.isLeaf() && msg.getDialogueLength() > 4)
+                .filter(Message::isLeaf)
                 .sorted(Comparator.comparingInt(Message::getOrderNum))
                 .collect(toList());
     }

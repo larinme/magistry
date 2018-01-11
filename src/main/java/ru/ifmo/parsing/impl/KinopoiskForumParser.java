@@ -29,7 +29,6 @@ public class KinopoiskForumParser extends AbstractParser {
     private static final String POST_QUERY = "post_message_";
     private static final Pattern COUNT_OF_PAGES_PATTERN = Pattern.compile("Страница \\d* из \\d*");
     private static final DateFormat format = new SimpleDateFormat("dd.MM.yyyy, HH:mm", Locale.ENGLISH);
-    private static final Logger log = Logger.getLogger(KinopoiskForumParser.class);
     private static final String PAGE_NUMBER_PARAMETER = "page";
     private static final String POSTS_CONTAINER = "posts";
     private static final String SOURCE_NAME = "Kinopoisk";
@@ -53,7 +52,7 @@ public class KinopoiskForumParser extends AbstractParser {
                     int numberOfElements = 0;
                     builder = new StringBuilder();
                     for (String s : split) {
-                        if (!s.equals(" ") && !s.equals("")) {
+                        if (!s.equals(" ") && !s.equals("") && !s.startsWith("$l")) {
                             if (numberOfElements++ >= 4) {
                                 builder.append(s).append(" ");
                             }
