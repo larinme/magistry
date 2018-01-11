@@ -49,8 +49,10 @@ public class Main {
             String url = (String) value;
             Parser parser = new KinopoiskForumParser(OUT);
             log.info("Start parsing " + url);
+            long startTime = System.currentTimeMillis();
             parser.parse(url);
-            log.info("Parsing successfully finished");
+            long endTime = System.currentTimeMillis();
+            log.info("Parsing successfully finished. System spent " + (endTime -startTime) + " ms");
         }
     }
 }

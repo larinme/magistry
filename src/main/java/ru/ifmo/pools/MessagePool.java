@@ -75,7 +75,7 @@ public class MessagePool {
         return pool.size();
     }
 
-    public void remove(Message message, Topic topic){
+    private void remove(Message message, Topic topic){
         Collection<Message> messages = message.buildDialogueHierarchy();
         messages.remove(startMessages.get(topic));
         pool.removeAll(messages);

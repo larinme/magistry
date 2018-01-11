@@ -1,6 +1,6 @@
 package ru.ifmo.entity;
 
-public class Token extends AbstractEntity {
+public class Token extends AbstractEntity implements Comparable<Token> {
 
     private final TokenType tokenType;
     private final Message message;
@@ -63,5 +63,10 @@ public class Token extends AbstractEntity {
                 ", value='" + value + '\'' +
                 ", id=" + id +
                 '}';
+    }
+
+    @Override
+    public int compareTo(Token o) {
+        return Integer.compare(message.getOrderNum(), o.getMessage().getOrderNum());
     }
 }

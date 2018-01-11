@@ -4,17 +4,14 @@ import ru.ifmo.entity.Message;
 import ru.ifmo.entity.Token;
 import ru.ifmo.entity.TokenType;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static java.util.stream.Collectors.toList;
 
 public class TokenPool {
 
     private static TokenPool instance = new TokenPool();
-    private Set<Token> pool = new HashSet<>();
+    private Set<Token> pool = new TreeSet<>();
     private long nextId = 0;
 
     public static TokenPool getInstance() {

@@ -9,8 +9,10 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import ru.ifmo.entity.*;
+import ru.ifmo.entity.utils.ComparableDocument;
 import ru.ifmo.parsing.Parser;
 import ru.ifmo.pools.*;
+import ru.ifmo.utils.DocumentDownloadingThread;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +22,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public abstract class AbstractParser implements Parser {
 
@@ -48,6 +49,7 @@ public abstract class AbstractParser implements Parser {
             .put("\n", " ")
             .build();
     private static final Logger LOG = Logger.getLogger(AbstractParser.class);
+    private static final int COUNT_OF_THREADS = 4;
 
     abstract Pattern getCountOfPagesPattern();
 
@@ -82,21 +84,73 @@ public abstract class AbstractParser implements Parser {
         topic = topicPool.putIfNotExists(source, url, getThema(), title);
     }
 
+    private SortedSet<ComparableDocument> getDocuments(String url, int pageCount) {
+        SortedSet<ComparableDocument> documents = new TreeSet<>();
+        Collection<DocumentDownloadingThread> activeThreads = new ArrayList<>();
+        List<DocumentDownloadingThread> threads = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            int range = (pageCount / COUNT_OF_THREADS) + 1 ;
+            int startPage = (range * i) + 1;
+            int endPage = Math.min(pageCount, (range * (i + 1)));
+            threads.add(new DocumentDownloadingThread(url + "&" + getPageNumberParameter(), startPage, endPage));
+        }
+
+        startDownloadThreads(activeThreads, threads);
+        waitPageDownloadFinish(activeThreads, threads);
+
+        for (DocumentDownloadingThread thread : threads) {
+            SortedSet<ComparableDocument> threadDocuments = thread.getDocuments();
+            documents.addAll(threadDocuments);
+        }
+        return documents;
+    }
+
+    private void waitPageDownloadFinish(Collection<DocumentDownloadingThread> activeThreads, List<DocumentDownloadingThread> threads) {
+        while (!activeThreads.isEmpty()) {
+            for (DocumentDownloadingThread thread : threads) {
+                if (thread.getState().equals(Thread.State.RUNNABLE)) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    activeThreads.remove(thread);
+                }
+            }
+        }
+    }
+
+    private void startDownloadThreads(Collection<DocumentDownloadingThread> activeThreads, List<DocumentDownloadingThread> threads) {
+        for (DocumentDownloadingThread thread : threads) {
+            activeThreads.add(thread);
+            thread.start();
+        }
+    }
+
     public void parse(String url) throws IOException {
         Document document = Jsoup.connect(url).get();
         init(document);
+
         int countOfPages = getCountOfPages(document.html());
-        for (int currentPage = 1; currentPage <= countOfPages; currentPage++) {
-            LOG.info("Page analyzing started #" + currentPage);
-            long startLoadingTime = System.currentTimeMillis();
-            document = Jsoup.connect(url + "&" + getPageNumberParameter() + "=" + currentPage).get();
-            long endLoadingTime = System.currentTimeMillis();
-            LOG.trace("Page has loaded. System spent " + (endLoadingTime - startLoadingTime) + " ms");
+        LOG.info("Downloading pages...");
+        long startLoadingTime = System.currentTimeMillis();
+        SortedSet<ComparableDocument> documents = getDocuments(url, countOfPages);
+        long endLoadingTime = System.currentTimeMillis();
+        LOG.info("Downloading pages finished. System spent " + (endLoadingTime - startLoadingTime) + " ms");
+
+        for (ComparableDocument comparableDocument : documents) {
+            document = comparableDocument.getDocument();
+            int currentPage = comparableDocument.getOrderNumber();
             parsePostsOnPage(getPosts(document), currentPage);
             LOG.info("The page " + currentPage + " has been parsed");
 
-            removeSingleMessages(currentPage);
-            flushDialogues(currentPage);
+            if (currentPage % 10 == 0) {
+                removeSingleMessages(25 * (currentPage - 3));
+            }
+            if ((currentPage - 5) % 50 == 0) {
+                flushDialogues();
+            }
         }
     }
 
@@ -236,35 +290,32 @@ public abstract class AbstractParser implements Parser {
         return authorPool.putIfNotExists(authorName, "");
     }
 
-    private void removeSingleMessages(int currentPage) {
-        if (currentPage % 10 == 0) {
-            long startLoadingTime = System.currentTimeMillis();
-            int poolVolume = messagePool.clear(25 * (currentPage - 3));
-            long endLoadingTime = System.currentTimeMillis();
-            LOG.trace("Single messages removing took " + (endLoadingTime - startLoadingTime) + " ms");
-            LOG.info("Pool size = " + poolVolume);
-        }
+    private void removeSingleMessages(int range) {
+        long startLoadingTime = System.currentTimeMillis();
+        int poolVolume = messagePool.clear(range);
+        long endLoadingTime = System.currentTimeMillis();
+        LOG.trace("Single messages removing took " + (endLoadingTime - startLoadingTime) + " ms");
+        LOG.info("Pool size = " + poolVolume);
+
     }
 
-    private void flushDialogues(int currentPage) throws IOException {
-        if ((currentPage - 5) % 50 == 0) {
-            LOG.info("Total messages after " + topic + " analyzing is  " + messagePool.getPool().size());
-            long startLoadingTime = System.currentTimeMillis();
-            List<Message> leafMessages = messagePool.getLeafMessages();
-            long endLoadingTime = System.currentTimeMillis();
-            LOG.trace("Leaf message searching " + (endLoadingTime - startLoadingTime) + " ms");
-            LOG.info("Total count of dialogues is " + leafMessages.size());
+    private void flushDialogues() throws IOException {
+        LOG.info("Total messages after " + topic + " analyzing is  " + messagePool.getPool().size());
+        long startLoadingTime = System.currentTimeMillis();
+        List<Message> leafMessages = messagePool.getLeafMessages();
+        long endLoadingTime = System.currentTimeMillis();
+        LOG.trace("Leaf message searching " + (endLoadingTime - startLoadingTime) + " ms");
+        LOG.info("Total count of dialogues is " + leafMessages.size());
 
-            startLoadingTime = System.currentTimeMillis();
-            writeInFile(leafMessages);
-            endLoadingTime = System.currentTimeMillis();
-            LOG.trace("Flushing took " + (endLoadingTime - startLoadingTime) + " ms");
+        startLoadingTime = System.currentTimeMillis();
+        writeInFile(leafMessages);
+        endLoadingTime = System.currentTimeMillis();
+        LOG.trace("Flushing took " + (endLoadingTime - startLoadingTime) + " ms");
 
-            startLoadingTime = System.currentTimeMillis();
-            messagePool.remove(leafMessages, topic);
-            endLoadingTime = System.currentTimeMillis();
-            LOG.trace("Removing flushed messages " + (endLoadingTime - startLoadingTime) + " ms");
-        }
+        startLoadingTime = System.currentTimeMillis();
+        messagePool.remove(leafMessages, topic);
+        endLoadingTime = System.currentTimeMillis();
+        LOG.trace("Removing flushed messages " + (endLoadingTime - startLoadingTime) + " ms");
     }
 
     protected void writeInFile(List<Message> leafMessages) throws IOException {
@@ -298,6 +349,6 @@ public abstract class AbstractParser implements Parser {
             dialogues.add(reference);
             reference = reference.getReference();
         }
-        return  dialogues;
+        return dialogues;
     }
 }
