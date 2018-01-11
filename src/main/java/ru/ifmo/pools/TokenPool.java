@@ -49,8 +49,7 @@ public class TokenPool {
     }
 
     public void remove(Collection<Message> messages){
-        List<Token> tokens = pool.stream().filter(msg -> messages.contains(msg.getMessage())).collect(toList());
-        pool.removeAll(tokens);
+        pool.removeIf(token -> messages.contains(token.getMessage()));
     }
 
 }
