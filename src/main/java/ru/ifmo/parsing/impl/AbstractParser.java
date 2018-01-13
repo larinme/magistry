@@ -351,12 +351,12 @@ public abstract class AbstractParser implements Parser {
         }
         int countFlushedDialogues = 0;
         for (Message leafMessage : leafMessages) {
-            LOG.info("Building dialogue with order number = " + leafMessage.getOrderNum());
+            LOG.debug("Building dialogue with order number = " + leafMessage.getOrderNum());
             Dialogue dialogue = dialogueBuilder.build(leafMessage);
             if (dialogue.size() <= 3) {
                 continue;
             }
-            LOG.info("Writing dialogue with order number = " + leafMessage.getOrderNum());
+            LOG.debug("Writing dialogue with order number = " + leafMessage.getOrderNum());
             int startOrderNum = messagePool.getFirstMessage(topic).getOrderNum();
             StringJoiner joiner = new StringJoiner("\n->");
             for (Message message : dialogue.getMessages()) {
