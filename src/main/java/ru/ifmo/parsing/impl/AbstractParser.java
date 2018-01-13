@@ -13,8 +13,10 @@ import ru.ifmo.entity.utils.ComparableDocument;
 import ru.ifmo.parsing.Parser;
 import ru.ifmo.pools.*;
 import ru.ifmo.utils.DialogueBuilder;
+import ru.ifmo.utils.DocumentDownloader;
 import ru.ifmo.utils.DocumentDownloadingThread;
 import ru.ifmo.utils.impl.DialogueBuilderImpl;
+import ru.ifmo.utils.impl.DocumentDownloaderImpl;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,6 +57,7 @@ public abstract class AbstractParser implements Parser {
     private int totalCountFlushedDialogues = 0;
 
     private final DialogueBuilder dialogueBuilder;
+    private final DocumentDownloader documentDownloader;
 
 
     abstract Pattern getCountOfPagesPattern();
@@ -79,14 +82,16 @@ public abstract class AbstractParser implements Parser {
 
     abstract Elements getPosts(Document document);
 
-    public AbstractParser(String out, DialogueBuilder dialogueBuilder) {
+    public AbstractParser(String out, DialogueBuilder dialogueBuilder, DocumentDownloader documentDownloader) {
         this.out = out;
         this.dialogueBuilder = dialogueBuilder;
+        this.documentDownloader = documentDownloader;
     }
 
     public AbstractParser(String out) {
         this.out = out;
         this.dialogueBuilder = DialogueBuilderImpl.getInstance();
+        this.documentDownloader = DocumentDownloaderImpl.getInstance();
     }
 
     protected void init(Document document) {
@@ -96,49 +101,7 @@ public abstract class AbstractParser implements Parser {
         topic = topicPool.putIfNotExists(source, url, getThema(), title);
     }
 
-    private SortedSet<ComparableDocument> getDocuments(String url, int pageCount) {
-        SortedSet<ComparableDocument> documents = new TreeSet<>();
-        Collection<DocumentDownloadingThread> activeThreads = new ArrayList<>();
-        List<DocumentDownloadingThread> threads = new ArrayList<>();
-        for (int i = 0; i < COUNT_OF_THREADS; i++) {
-            int range = (pageCount / COUNT_OF_THREADS) + 1;
-            int startPage = (range * i) + 1;
-            int endPage = Math.min(pageCount, (range * (i + 1)));
-            threads.add(new DocumentDownloadingThread(url + "&" + getPageNumberParameter(), startPage, endPage));
-        }
 
-        startDownloadThreads(activeThreads, threads);
-        waitPageDownloadFinish(activeThreads, threads);
-
-        for (DocumentDownloadingThread thread : threads) {
-            SortedSet<ComparableDocument> threadDocuments = thread.getDocuments();
-            documents.addAll(threadDocuments);
-        }
-        return documents;
-    }
-
-    private void waitPageDownloadFinish(Collection<DocumentDownloadingThread> activeThreads, List<DocumentDownloadingThread> threads) {
-        while (!activeThreads.isEmpty()) {
-            for (DocumentDownloadingThread thread : threads) {
-                if (thread.getState().equals(Thread.State.RUNNABLE)) {
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                } else {
-                    activeThreads.remove(thread);
-                }
-            }
-        }
-    }
-
-    private void startDownloadThreads(Collection<DocumentDownloadingThread> activeThreads, List<DocumentDownloadingThread> threads) {
-        for (DocumentDownloadingThread thread : threads) {
-            activeThreads.add(thread);
-            thread.start();
-        }
-    }
 
     public void parse(String url) throws IOException {
         Document document = Jsoup.connect(url).get();
@@ -147,7 +110,7 @@ public abstract class AbstractParser implements Parser {
         int countOfPages = getCountOfPages(document.html());
         LOG.info("Downloading pages...");
         long startLoadingTime = System.currentTimeMillis();
-        SortedSet<ComparableDocument> documents = getDocuments(url, countOfPages);
+        SortedSet<ComparableDocument> documents = documentDownloader.getDocuments(url, getPageNumberParameter(), countOfPages);
         long endLoadingTime = System.currentTimeMillis();
         LOG.info("Downloading pages finished. System spent " + (endLoadingTime - startLoadingTime) + " ms");
 

@@ -10,7 +10,7 @@ import java.util.TreeSet;
 
 public class DialogueBuilderImpl implements DialogueBuilder {
 
-    private static DialogueBuilderImpl instance;
+    private static volatile DialogueBuilderImpl instance;
 
     private DialogueBuilderImpl(){}
 
