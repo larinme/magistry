@@ -12,7 +12,7 @@ import static java.util.stream.Collectors.toList;
 public class MessagePool {
 
     private static final Equals<String> ARE_MESSAGES_TEXT_EQUAL = (src, object) ->
-            new JaccardSimilarity().apply(src, object) > 0.8
+            new JaccardSimilarity().apply(src, object) > 0.9
                     || object.contains(src.substring(0, Math.min(src.length(), 15)));
     private static MessagePool instance = new MessagePool();
     private Set<Message> pool = new HashSet<>();

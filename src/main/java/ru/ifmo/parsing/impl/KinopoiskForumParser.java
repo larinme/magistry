@@ -1,25 +1,15 @@
 package ru.ifmo.parsing.impl;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
-import org.apache.log4j.Logger;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import ru.ifmo.entity.*;
-import ru.ifmo.pools.*;
 
-import java.io.File;
-import java.io.IOException;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class KinopoiskForumParser extends AbstractParser {
 

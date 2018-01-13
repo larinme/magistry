@@ -12,7 +12,9 @@ import ru.ifmo.entity.*;
 import ru.ifmo.entity.utils.ComparableDocument;
 import ru.ifmo.parsing.Parser;
 import ru.ifmo.pools.*;
+import ru.ifmo.utils.DialogueBuilder;
 import ru.ifmo.utils.DocumentDownloadingThread;
+import ru.ifmo.utils.impl.DialogueBuilderImpl;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,6 +52,10 @@ public abstract class AbstractParser implements Parser {
             .build();
     private static final Logger LOG = Logger.getLogger(AbstractParser.class);
     private static final int COUNT_OF_THREADS = 4;
+    private int totalCountFlushedDialogues = 0;
+
+    private final DialogueBuilder dialogueBuilder;
+
 
     abstract Pattern getCountOfPagesPattern();
 
@@ -73,8 +79,14 @@ public abstract class AbstractParser implements Parser {
 
     abstract Elements getPosts(Document document);
 
+    public AbstractParser(String out, DialogueBuilder dialogueBuilder) {
+        this.out = out;
+        this.dialogueBuilder = dialogueBuilder;
+    }
+
     public AbstractParser(String out) {
         this.out = out;
+        this.dialogueBuilder = DialogueBuilderImpl.getInstance();
     }
 
     protected void init(Document document) {
@@ -88,8 +100,8 @@ public abstract class AbstractParser implements Parser {
         SortedSet<ComparableDocument> documents = new TreeSet<>();
         Collection<DocumentDownloadingThread> activeThreads = new ArrayList<>();
         List<DocumentDownloadingThread> threads = new ArrayList<>();
-        for (int i = 0; i < 4; i++) {
-            int range = (pageCount / COUNT_OF_THREADS) + 1 ;
+        for (int i = 0; i < COUNT_OF_THREADS; i++) {
+            int range = (pageCount / COUNT_OF_THREADS) + 1;
             int startPage = (range * i) + 1;
             int endPage = Math.min(pageCount, (range * (i + 1)));
             threads.add(new DocumentDownloadingThread(url + "&" + getPageNumberParameter(), startPage, endPage));
@@ -152,6 +164,9 @@ public abstract class AbstractParser implements Parser {
                 flushDialogues();
             }
         }
+
+        flushDialogues();
+        LOG.info("Total count of flushed dialogues: " + totalCountFlushedDialogues);
     }
 
     protected void parsePostsOnPage(Elements posts, int currentPage) {
@@ -184,10 +199,19 @@ public abstract class AbstractParser implements Parser {
         }
         int orderNum = 25 * (pageNumber - 1) + currentPost;
         LOG.debug("Order number " + orderNum);
-        Message message = messagePool.put(topic, author, textMessage, orderNum, date);
-        split(text.html(), message);
-
+        String pattern = "<div style=\"margin:20px; margin-top:5px; \">.+?";
+        String html = text.html();
+        String[] split = html.split(pattern);
+        for (String part : split) {
+            if (part.equals("")) {
+                continue;
+            }
+            Message message = messagePool.put(topic, author, textMessage, orderNum, date);
+            split(part, message);
+            message.setText(message.getText().replaceFirst("^\\s*", ""));
+        }
     }
+
 
     protected void split(String html, Message message) {
         Map<TokenType, List<Token>> tokens = new HashMap<>();
@@ -325,30 +349,26 @@ public abstract class AbstractParser implements Parser {
             boolean newFileCreated = file.createNewFile();
             LOG.info("New file Created" + newFileCreated);
         }
+        int countFlushedDialogues = 0;
         for (Message leafMessage : leafMessages) {
-            Collection<Message> dialogue = buildDialogue(leafMessage);
+            LOG.info("Building dialogue with order number = " + leafMessage.getOrderNum());
+            Dialogue dialogue = dialogueBuilder.build(leafMessage);
             if (dialogue.size() <= 3) {
                 continue;
             }
+            LOG.info("Writing dialogue with order number = " + leafMessage.getOrderNum());
             int startOrderNum = messagePool.getFirstMessage(topic).getOrderNum();
             StringJoiner joiner = new StringJoiner("\n->");
-            for (Message message : dialogue) {
+            for (Message message : dialogue.getMessages()) {
                 if (message.getOrderNum() > startOrderNum) {
-                    joiner.add(message.getText());
+                    joiner.add(message.getOrderNum() + ")" + message.getText());
                 }
             }
+            countFlushedDialogues++;
+            totalCountFlushedDialogues++;
             Files.append(joiner.toString() + "\n\n", file, Charsets.UTF_8);
         }
-        LOG.info("Writing in file " + out + " finished");
+        LOG.info("Writing in file " + out + " finished. Count of flushed dialogues " + countFlushedDialogues);
     }
 
-    private Collection<Message> buildDialogue(Message leafMessage) {
-        Set<Message> dialogues = new TreeSet<>(Comparator.comparingInt(Message::getOrderNum));
-        Message reference = leafMessage;
-        while (reference != null) {
-            dialogues.add(reference);
-            reference = reference.getReference();
-        }
-        return dialogues;
-    }
 }
