@@ -156,7 +156,6 @@ public abstract class AbstractParser implements Parser {
         }
     }
 
-
     protected void split(String html, Message message) {
         Map<TokenType, List<Token>> tokens = new HashMap<>();
         String text = cleanMessage(html);
@@ -171,7 +170,6 @@ public abstract class AbstractParser implements Parser {
         endTime = System.currentTimeMillis();
         LOG.trace("Token substitution took " + (endTime - startTime));
         LOG.debug("Token parsing ended");
-
     }
 
     protected void performTokenAnalyzing(Message message, Map<TokenType, List<Token>> tokens, String text) {
