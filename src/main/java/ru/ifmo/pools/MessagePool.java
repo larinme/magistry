@@ -75,14 +75,14 @@ public class MessagePool {
         return pool.size();
     }
 
-    private void remove(Message message, Topic topic){
+    private void remove(Message message, Topic topic) {
         Collection<Message> messages = message.buildDialogueHierarchy();
         messages.remove(startMessages.get(topic));
         pool.removeAll(messages);
         TokenPool.getInstance().remove(messages);
     }
 
-    public void remove(Collection<Message> messages, Topic topic){
+    public void remove(Collection<Message> messages, Topic topic) {
         for (Message currentMessage : messages) {
             remove(currentMessage, topic);
         }

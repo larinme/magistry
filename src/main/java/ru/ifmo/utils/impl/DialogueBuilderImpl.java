@@ -10,21 +10,6 @@ import java.util.TreeSet;
 
 public class DialogueBuilderImpl implements DialogueBuilder {
 
-    private static volatile DialogueBuilderImpl instance;
-
-    private DialogueBuilderImpl(){}
-
-    public static DialogueBuilderImpl getInstance() {
-        if (instance == null){
-            synchronized (DialogueBuilderImpl.class){
-                if (instance == null) {
-                    instance = new DialogueBuilderImpl();
-                }
-            }
-        }
-        return instance;
-    }
-
     @Override
     public Dialogue build(Message message) {
         Set<Message> dialogues = new TreeSet<>(Comparator.comparingInt(Message::getOrderNum));

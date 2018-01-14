@@ -1,8 +1,6 @@
 package ru.ifmo.parsing.impl;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.Files;
 import org.apache.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -12,13 +10,9 @@ import ru.ifmo.entity.*;
 import ru.ifmo.entity.utils.ComparableDocument;
 import ru.ifmo.parsing.Parser;
 import ru.ifmo.pools.*;
-import ru.ifmo.utils.DialogueBuilder;
+import ru.ifmo.utils.DialogueWriter;
 import ru.ifmo.utils.DocumentDownloader;
-import ru.ifmo.utils.DocumentDownloadingThread;
-import ru.ifmo.utils.impl.DialogueBuilderImpl;
-import ru.ifmo.utils.impl.DocumentDownloaderImpl;
 
-import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -31,34 +25,34 @@ public abstract class AbstractParser implements Parser {
 
     protected static final Function<String, String> DEFAULT_TOKEN_TYPE_PROCESSOR = value -> value;
     protected static final Pattern HTML_PATTERN = Pattern.compile("<[^>]*>");
+    protected static final Map<String, String> CLEAN_TEXT_MAP = ImmutableMap.<String, String>builder()
+            .put("<br\\s/>", "")
+            .put("&quot;", "\"")
+            .put("\n", " ")
+            .build();
     private static final Pattern HASHTAG_PATTERN = Pattern.compile("(\\B(#[a-zA-Z]+\\b)(?!;))");
     private static final Pattern LINK_PATTERN = Pattern.compile("((?i)<a([^>]+)>(.+?)</a>)");
     private static final Pattern QUOTE_PATTERN = Pattern.compile("<div.*Цитата:.*Сообщение\\s*от.*</div>");
     private static final Pattern EMOTICON_PATTERN = Pattern.compile("<img\\s*src=\"[\\w|/]*.gif\"[\\s*|(\\w*=\"\\w*\")]*/>");
-    protected final SourcePool sourcePool = SourcePool.getInstance();
-    protected final MessagePool messagePool = MessagePool.getInstance();
-    protected final TopicPool topicPool = TopicPool.getInstance();
-    protected final TokenPool tokenPool = TokenPool.getInstance();
-    protected final String out;
-    protected Topic topic;
     protected static final Map<TokenType, Pattern> PATTERNS = ImmutableMap.<TokenType, Pattern>builder()
             .put(TokenType.HASH_TAG, HASHTAG_PATTERN)
             .put(TokenType.EMOTICON, EMOTICON_PATTERN)
             .put(TokenType.LINK, LINK_PATTERN)
             .put(TokenType.QUOTE, QUOTE_PATTERN)
             .build();
-    protected static final Map<String, String> CLEAN_TEXT_MAP = ImmutableMap.<String, String>builder()
-            .put("<br\\s/>", "")
-            .put("&quot;", "\"")
-            .put("\n", " ")
-            .build();
     private static final Logger LOG = Logger.getLogger(AbstractParser.class);
-    private static final int COUNT_OF_THREADS = 4;
-    private int totalCountFlushedDialogues = 0;
+    protected final SourcePool sourcePool = SourcePool.getInstance();
+    protected final MessagePool messagePool = MessagePool.getInstance();
+    protected final TopicPool topicPool = TopicPool.getInstance();
+    protected final TokenPool tokenPool = TokenPool.getInstance();
+    protected Topic topic;
+    private DocumentDownloader documentDownloader;
+    private DialogueWriter writer;
 
-    private final DialogueBuilder dialogueBuilder;
-    private final DocumentDownloader documentDownloader;
-
+    public AbstractParser(DocumentDownloader documentDownloader, DialogueWriter writer) {
+        this.documentDownloader = documentDownloader;
+        this.writer = writer;
+    }
 
     abstract Pattern getCountOfPagesPattern();
 
@@ -82,18 +76,6 @@ public abstract class AbstractParser implements Parser {
 
     abstract Elements getPosts(Document document);
 
-    public AbstractParser(String out, DialogueBuilder dialogueBuilder, DocumentDownloader documentDownloader) {
-        this.out = out;
-        this.dialogueBuilder = dialogueBuilder;
-        this.documentDownloader = documentDownloader;
-    }
-
-    public AbstractParser(String out) {
-        this.out = out;
-        this.dialogueBuilder = DialogueBuilderImpl.getInstance();
-        this.documentDownloader = DocumentDownloaderImpl.getInstance();
-    }
-
     protected void init(Document document) {
         String url = document.baseUri();
         Source source = sourcePool.putIfNotExists(getSourceName(), url);
@@ -102,8 +84,7 @@ public abstract class AbstractParser implements Parser {
     }
 
 
-
-    public void parse(String url) throws IOException {
+    public void parse(String out, String url) throws IOException {
         Document document = Jsoup.connect(url).get();
         init(document);
 
@@ -124,12 +105,12 @@ public abstract class AbstractParser implements Parser {
                 removeSingleMessages(25 * (currentPage - 3));
             }
             if ((currentPage - 5) % 50 == 0) {
-                flushDialogues();
+                writer.flushDialogues(out, topic);
             }
         }
 
-        flushDialogues();
-        LOG.info("Total count of flushed dialogues: " + totalCountFlushedDialogues);
+        writer.flushDialogues(out, topic);
+        LOG.info("Total count of flushed dialogues: " + writer.getTotalCountFlushedDialogues());
     }
 
     protected void parsePostsOnPage(Elements posts, int currentPage) {
@@ -286,52 +267,5 @@ public abstract class AbstractParser implements Parser {
 
     }
 
-    private void flushDialogues() throws IOException {
-        LOG.info("Total messages after " + topic + " analyzing is  " + messagePool.getPool().size());
-        long startLoadingTime = System.currentTimeMillis();
-        List<Message> leafMessages = messagePool.getLeafMessages();
-        long endLoadingTime = System.currentTimeMillis();
-        LOG.trace("Leaf message searching " + (endLoadingTime - startLoadingTime) + " ms");
-        LOG.info("Total count of dialogues is " + leafMessages.size());
-
-        startLoadingTime = System.currentTimeMillis();
-        writeInFile(leafMessages);
-        endLoadingTime = System.currentTimeMillis();
-        LOG.trace("Flushing took " + (endLoadingTime - startLoadingTime) + " ms");
-
-        startLoadingTime = System.currentTimeMillis();
-        messagePool.remove(leafMessages, topic);
-        endLoadingTime = System.currentTimeMillis();
-        LOG.trace("Removing flushed messages " + (endLoadingTime - startLoadingTime) + " ms");
-    }
-
-    protected void writeInFile(List<Message> leafMessages) throws IOException {
-        File file = new File(out);
-        LOG.info("start writing in file " + out);
-        if (!file.exists()) {
-            boolean newFileCreated = file.createNewFile();
-            LOG.info("New file Created" + newFileCreated);
-        }
-        int countFlushedDialogues = 0;
-        for (Message leafMessage : leafMessages) {
-            LOG.debug("Building dialogue with order number = " + leafMessage.getOrderNum());
-            Dialogue dialogue = dialogueBuilder.build(leafMessage);
-            if (dialogue.size() <= 3) {
-                continue;
-            }
-            LOG.debug("Writing dialogue with order number = " + leafMessage.getOrderNum());
-            int startOrderNum = messagePool.getFirstMessage(topic).getOrderNum();
-            StringJoiner joiner = new StringJoiner("\n->");
-            for (Message message : dialogue.getMessages()) {
-                if (message.getOrderNum() > startOrderNum) {
-                    joiner.add(message.getOrderNum() + ")" + message.getText());
-                }
-            }
-            countFlushedDialogues++;
-            totalCountFlushedDialogues++;
-            Files.append(joiner.toString() + "\n\n", file, Charsets.UTF_8);
-        }
-        LOG.info("Writing in file " + out + " finished. Count of flushed dialogues " + countFlushedDialogues);
-    }
 
 }

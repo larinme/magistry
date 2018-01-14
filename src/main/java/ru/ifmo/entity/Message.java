@@ -74,7 +74,7 @@ public class Message extends AbstractEntity {
         return date;
     }
 
-    public Collection<Message> buildDialogueHierarchy(){
+    public Collection<Message> buildDialogueHierarchy() {
         Collection<Message> messages = new LinkedList<>();
         Message currentMessage = this;
         while (currentMessage != null) {

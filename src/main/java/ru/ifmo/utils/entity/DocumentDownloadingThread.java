@@ -1,4 +1,4 @@
-package ru.ifmo.utils;
+package ru.ifmo.utils.entity;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -15,7 +15,7 @@ public class DocumentDownloadingThread extends Thread {
     private final int endPageNum;
     private SortedSet<ComparableDocument> documents = new TreeSet<>();
 
-    public DocumentDownloadingThread(String url, int startPageNum, int endPageNum){
+    public DocumentDownloadingThread(String url, int startPageNum, int endPageNum) {
         this.url = url;
         this.startPageNum = startPageNum;
         this.endPageNum = endPageNum;

@@ -1,9 +1,11 @@
 package ru.ifmo.parsing;
 
 import com.google.common.io.Resources;
+import com.google.inject.Guice;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 import ru.ifmo.parsing.impl.KinopoiskForumParser;
+import ru.ifmo.utils.Module;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,12 +49,12 @@ public class Main {
         Collection<Object> values = properties.values();
         for (Object value : values) {
             String url = (String) value;
-            Parser parser = new KinopoiskForumParser(OUT);
+            Parser parser = Guice.createInjector(new Module()).getInstance(KinopoiskForumParser.class);
             log.info("Start parsing " + url);
             long startTime = System.currentTimeMillis();
-            parser.parse(url);
+            parser.parse(OUT, url);
             long endTime = System.currentTimeMillis();
-            log.info("Parsing successfully finished. System spent " + (endTime -startTime) + " ms");
+            log.info("Parsing successfully finished. System spent " + (endTime - startTime) + " ms");
         }
     }
 }

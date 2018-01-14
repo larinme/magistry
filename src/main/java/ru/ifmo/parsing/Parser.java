@@ -4,6 +4,6 @@ import java.io.IOException;
 
 public interface Parser {
 
-    void parse(String url) throws IOException;
+    void parse(String out, String url) throws IOException;
 
 }

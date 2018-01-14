@@ -2,28 +2,11 @@ package ru.ifmo.utils.impl;
 
 import ru.ifmo.entity.utils.ComparableDocument;
 import ru.ifmo.utils.DocumentDownloader;
-import ru.ifmo.utils.DocumentDownloadingThread;
+import ru.ifmo.utils.entity.DocumentDownloadingThread;
 
 import java.util.*;
 
 public class DocumentDownloaderImpl implements DocumentDownloader {
-
-    private static volatile DocumentDownloaderImpl instance;
-
-    private DocumentDownloaderImpl() {
-    }
-
-    public static DocumentDownloaderImpl getInstance() {
-        if (instance == null) {
-            synchronized (DocumentDownloaderImpl.class) {
-                if (instance == null) {
-                    instance = new DocumentDownloaderImpl();
-                }
-            }
-        }
-
-        return instance;
-    }
 
     @Override
     public SortedSet<ComparableDocument> getDocuments(String url, String pageParameter, int pageCount) {

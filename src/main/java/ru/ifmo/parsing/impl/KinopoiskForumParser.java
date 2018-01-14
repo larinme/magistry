@@ -2,11 +2,16 @@ package ru.ifmo.parsing.impl;
 
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
-import ru.ifmo.entity.*;
+import ru.ifmo.entity.TokenType;
+import ru.ifmo.utils.DialogueWriter;
+import ru.ifmo.utils.DocumentDownloader;
 
+import javax.inject.Inject;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -56,8 +61,9 @@ public class KinopoiskForumParser extends AbstractParser {
         }
     }
 
-    public KinopoiskForumParser(String out) {
-        super(out);
+    @Inject
+    public KinopoiskForumParser(DocumentDownloader documentDownloader, DialogueWriter writer) {
+        super(documentDownloader, writer);
     }
 
     @Override

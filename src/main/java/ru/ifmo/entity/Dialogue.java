@@ -8,7 +8,7 @@ public class Dialogue {
 
     private List<Message> messages = new ArrayList<>();
 
-    public Dialogue(Collection<Message> dialogueMessages){
+    public Dialogue(Collection<Message> dialogueMessages) {
         messages.clear();
         messages.addAll(dialogueMessages);
     }
@@ -17,7 +17,7 @@ public class Dialogue {
         return messages;
     }
 
-    public int size(){
+    public int size() {
         return messages.size();
     }
 }
