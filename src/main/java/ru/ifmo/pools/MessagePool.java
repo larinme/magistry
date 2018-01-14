@@ -1,9 +1,7 @@
 package ru.ifmo.pools;
 
 import org.apache.commons.text.similarity.JaccardSimilarity;
-import ru.ifmo.entity.Author;
-import ru.ifmo.entity.Message;
-import ru.ifmo.entity.Topic;
+import ru.ifmo.entity.*;
 
 import java.util.*;
 
@@ -75,16 +73,8 @@ public class MessagePool {
         return pool.size();
     }
 
-    private void remove(Message message, Topic topic) {
-        Collection<Message> messages = message.buildDialogueHierarchy();
-        messages.remove(startMessages.get(topic));
-        pool.removeAll(messages);
-        TokenPool.getInstance().remove(messages);
-    }
-
-    public void remove(Collection<Message> messages, Topic topic) {
-        for (Message currentMessage : messages) {
-            remove(currentMessage, topic);
-        }
+    public  void remove(Dialogue dialogue){
+        pool.removeAll(dialogue.getMessages());
+        TokenPool.getInstance().remove(dialogue.getMessages());
     }
 }

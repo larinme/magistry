@@ -40,11 +40,6 @@ public class DialogueWriterImpl implements DialogueWriter {
         writeInFile(out, topic, leafMessages);
         endLoadingTime = System.currentTimeMillis();
         LOG.trace("Flushing took " + (endLoadingTime - startLoadingTime) + " ms");
-
-        startLoadingTime = System.currentTimeMillis();
-        messagePool.remove(leafMessages, topic);
-        endLoadingTime = System.currentTimeMillis();
-        LOG.trace("Removing flushed messages " + (endLoadingTime - startLoadingTime) + " ms");
     }
 
     protected void writeInFile(String out, Topic topic, List<Message> leafMessages) throws IOException {
@@ -61,17 +56,22 @@ public class DialogueWriterImpl implements DialogueWriter {
             if (dialogue.size() <= 3) {
                 continue;
             }
-            LOG.debug("Writing dialogue with order number = " + leafMessage.getOrderNum());
-            int startOrderNum = MessagePool.getInstance().getFirstMessage(topic).getOrderNum();
-            StringJoiner joiner = new StringJoiner("\n->");
-            for (Message message : dialogue.getMessages()) {
-                if (message.getOrderNum() > startOrderNum) {
-                    joiner.add(message.getOrderNum() + ")" + message.getText());
+            List<Dialogue> dialogues = dialogue.getSubDialogues(4);
+            for (Dialogue currentDialogue: dialogues) {
+                LOG.debug("Writing dialogue with order number = " + leafMessage.getOrderNum());
+                int startOrderNum = MessagePool.getInstance().getFirstMessage(topic).getOrderNum();
+                StringJoiner joiner = new StringJoiner("\n->");
+                for (Message message : currentDialogue.getMessages()) {
+                    if (message.getOrderNum() > startOrderNum) {
+                        joiner.add(message.getOrderNum() + ")" + message.getText());
+                    }
                 }
+                countFlushedDialogues++;
+                totalCountFlushedDialogues++;
+                Files.append(joiner.toString() + "\n\n", file, Charsets.UTF_8);
+                messagePool.remove(dialogue);
             }
-            countFlushedDialogues++;
-            totalCountFlushedDialogues++;
-            Files.append(joiner.toString() + "\n\n", file, Charsets.UTF_8);
+
         }
         LOG.info("Writing in file " + out + " finished. Count of flushed dialogues " + countFlushedDialogues);
     }

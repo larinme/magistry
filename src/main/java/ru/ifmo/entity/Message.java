@@ -74,16 +74,6 @@ public class Message extends AbstractEntity {
         return date;
     }
 
-    public Collection<Message> buildDialogueHierarchy() {
-        Collection<Message> messages = new LinkedList<>();
-        Message currentMessage = this;
-        while (currentMessage != null) {
-            messages.add(currentMessage);
-            currentMessage = currentMessage.getReference();
-        }
-        return messages;
-    }
-
     public boolean isLeaf() {
         return isLeaf;
     }

@@ -16,7 +16,11 @@ public class DialogueBuilderImpl implements DialogueBuilder {
         Message reference = message;
         while (reference != null) {
             dialogues.add(reference);
-            reference = reference.getReference();
+            if (reference != reference.getReference()) {
+                reference = reference.getReference();
+            } else {
+                break;
+            }
         }
         return new Dialogue(dialogues);
     }
