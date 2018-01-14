@@ -2,16 +2,26 @@ package ru.ifmo.utils.impl;
 
 import ru.ifmo.entity.utils.ComparableDocument;
 import ru.ifmo.utils.DocumentDownloader;
+import ru.ifmo.utils.ThreadRunner;
 import ru.ifmo.utils.entity.DocumentDownloadingThread;
 
-import java.util.*;
+import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 public class DocumentDownloaderImpl implements DocumentDownloader {
 
+    private ThreadRunner<DocumentDownloadingThread> threadRunner;
+
+    @Inject
+    public DocumentDownloaderImpl(ThreadRunner<DocumentDownloadingThread> threadRunner) {
+        this.threadRunner = threadRunner;
+    }
+
     @Override
     public SortedSet<ComparableDocument> getDocuments(String url, String pageParameter, int pageCount) {
-        SortedSet<ComparableDocument> documents = new TreeSet<>();
-        Collection<DocumentDownloadingThread> activeThreads = new ArrayList<>();
         List<DocumentDownloadingThread> threads = new ArrayList<>();
         for (int i = 0; i < COUNT_OF_THREADS; i++) {
             int range = (pageCount / COUNT_OF_THREADS) + 1;
@@ -20,9 +30,9 @@ public class DocumentDownloaderImpl implements DocumentDownloader {
             threads.add(new DocumentDownloadingThread(url + "&" + pageParameter, startPage, endPage));
         }
 
-        startDownloadThreads(activeThreads, threads);
-        waitPageDownloadFinish(activeThreads, threads);
+        threadRunner.start(threads);
 
+        SortedSet<ComparableDocument> documents = new TreeSet<>();
         for (DocumentDownloadingThread thread : threads) {
             SortedSet<ComparableDocument> threadDocuments = thread.getDocuments();
             documents.addAll(threadDocuments);
@@ -30,26 +40,4 @@ public class DocumentDownloaderImpl implements DocumentDownloader {
         return documents;
     }
 
-    private void waitPageDownloadFinish(Collection<DocumentDownloadingThread> activeThreads, List<DocumentDownloadingThread> threads) {
-        while (!activeThreads.isEmpty()) {
-            for (DocumentDownloadingThread thread : threads) {
-                if (thread.getState().equals(Thread.State.RUNNABLE)) {
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                } else {
-                    activeThreads.remove(thread);
-                }
-            }
-        }
-    }
-
-    private void startDownloadThreads(Collection<DocumentDownloadingThread> activeThreads, List<DocumentDownloadingThread> threads) {
-        for (DocumentDownloadingThread thread : threads) {
-            activeThreads.add(thread);
-            thread.start();
-        }
-    }
 }

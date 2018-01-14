@@ -24,7 +24,7 @@ public class DialogueWriterImpl implements DialogueWriter {
     private DialogueBuilder builder;
 
     @Inject
-    public DialogueWriterImpl(DialogueBuilderImpl builder) {
+    public DialogueWriterImpl(DialogueBuilder builder) {
         this.builder = builder;
     }
 
