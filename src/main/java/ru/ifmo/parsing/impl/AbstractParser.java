@@ -266,6 +266,4 @@ public abstract class AbstractParser implements Parser {
         LOG.info("Pool size = " + poolVolume);
 
     }
-
-
 }
