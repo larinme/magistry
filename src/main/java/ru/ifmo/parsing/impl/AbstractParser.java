@@ -1,6 +1,8 @@
 package ru.ifmo.parsing.impl;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.Files;
 import org.apache.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -13,6 +15,7 @@ import ru.ifmo.pools.*;
 import ru.ifmo.utils.DialogueWriter;
 import ru.ifmo.utils.DocumentDownloader;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -85,6 +88,9 @@ public abstract class AbstractParser implements Parser {
 
 
     public void parse(String out, String url) throws IOException {
+        File file = new File(out);
+        Files.append(url + "\n\n", file, Charsets.UTF_8);
+
         Document document = Jsoup.connect(url).get();
         init(document);
 
