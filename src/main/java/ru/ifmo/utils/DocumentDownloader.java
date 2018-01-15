@@ -6,7 +6,7 @@ import java.util.SortedSet;
 
 public interface DocumentDownloader {
 
-    int COUNT_OF_THREADS = 4;
+    int COUNT_OF_THREADS = 16;
 
     SortedSet<ComparableDocument> getDocuments(String url, String pageParameter, int pageCount);
 }
