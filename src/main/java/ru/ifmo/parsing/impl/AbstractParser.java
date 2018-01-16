@@ -95,7 +95,7 @@ public abstract class AbstractParser implements Parser {
         init(document);
 
         int countOfPages = getCountOfPages(document.html());
-        LOG.info("Downloading pages...");
+        LOG.info("Downloading " + countOfPages + " pages...");
         long startLoadingTime = System.currentTimeMillis();
         SortedSet<ComparableDocument> documents = documentDownloader.getDocuments(url, getPageNumberParameter(), countOfPages);
         long endLoadingTime = System.currentTimeMillis();
