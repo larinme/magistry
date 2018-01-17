@@ -1,8 +1,6 @@
 package ru.ifmo.entity;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.LinkedList;
+import java.util.*;
 
 public class Message extends AbstractEntity {
 
@@ -11,6 +9,7 @@ public class Message extends AbstractEntity {
     private final int orderNum;
     private final Date date;
     private Message reference;
+    private List<Token> tokens = new ArrayList<>();
     private String text;
     private boolean isLeaf = true;
 
@@ -80,6 +79,18 @@ public class Message extends AbstractEntity {
 
     private void setIsLeaf(boolean list) {
         isLeaf = list;
+    }
+
+    public void addToken(Token token){
+        tokens.add(token);
+    }
+
+    public String getTokenStringPresenter(){
+        StringBuilder builder = new StringBuilder();
+        for (Token token : tokens) {
+            builder.append(token.getValue()).append(" ");
+        }
+        return builder.toString();
     }
 
     @Override

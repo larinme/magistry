@@ -63,7 +63,7 @@ public class DialogueWriterImpl implements DialogueWriter {
                 StringJoiner joiner = new StringJoiner("\n->");
                 for (Message message : currentDialogue.getMessages()) {
                     if (message.getOrderNum() > startOrderNum) {
-                        joiner.add(message.getOrderNum() + ")" + message.getText());
+                        joiner.add(message.getOrderNum() + ")" + message.getTokenStringPresenter());
                     }
                 }
                 countFlushedDialogues++;

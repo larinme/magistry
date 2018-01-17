@@ -88,11 +88,13 @@ public abstract class AbstractParser implements Parser {
 
 
     public void parse(String out, String url) throws IOException {
-        File file = new File(out);
-        Files.append(url + "\n\n", file, Charsets.UTF_8);
-
         Document document = Jsoup.connect(url).get();
         init(document);
+
+        File file = new File(out);
+        Files.append(url + "\n", file, Charsets.UTF_8);
+        Files.append(topic.toString() + "\n\n", file, Charsets.UTF_8);
+
 
         int countOfPages = getCountOfPages(document.html());
         LOG.info("Downloading " + countOfPages + " pages...");
@@ -116,7 +118,9 @@ public abstract class AbstractParser implements Parser {
         }
 
         writer.flushDialogues(out, topic);
-        LOG.info("Total count of flushed dialogues: " + writer.getTotalCountFlushedDialogues());
+
+        boolean renamed = file.renameTo(new File(file.getParentFile().getAbsolutePath() + "/" + writer.getTotalCountFlushedDialogues() + ".txt"));
+        LOG.info("Total count of flushed dialogues: " + writer.getTotalCountFlushedDialogues() + ", file was renamed = " + renamed);
     }
 
     protected void parsePostsOnPage(Elements posts, int currentPage) {
@@ -189,11 +193,13 @@ public abstract class AbstractParser implements Parser {
             if (!Pattern.compile("\\$\\w\\d\\$").matcher(element).find()) {
                 builder.append(element).append(" ");
                 if (i + 1 == split.length) {
-                    tokenPool.putIfNotExists(TokenType.PLAINT_TEXT, builder.toString(), message, orderNum);
+                    Token token = tokenPool.putIfNotExists(TokenType.PLAINT_TEXT, builder.toString(), message, orderNum);
+                    message.addToken(token);
                 }
             } else {
                 if (builder.length() > 0) {
                     Token textToken = tokenPool.putIfNotExists(TokenType.PLAINT_TEXT, builder.toString(), message, orderNum);
+                    message.addToken(textToken);
                     LOG.debug("Text token " + textToken);
                 }
                 builder = new StringBuilder();
@@ -211,6 +217,7 @@ public abstract class AbstractParser implements Parser {
                     message.setReference(reference);
                     LOG.debug("Reference " + reference);
                 }
+                message.addToken(token);
                 LOG.debug("Token " + token);
             }
         }

@@ -16,7 +16,7 @@ import java.util.Properties;
 public class Main {
 
     private static final String BASE_DIR = System.getProperty("user.dir");
-    private static final String OUT = BASE_DIR + "/dialogues/result.txt";
+    private static final String OUT = BASE_DIR + "/dialogues/formatted/result.txt";
     private static final Logger log = Logger.getLogger(Main.class);
     private static Properties properties = new Properties();
 
@@ -49,6 +49,10 @@ public class Main {
         Collection<Object> values = properties.values();
         for (Object value : values) {
             String url = (String) value;
+            File file = new File(OUT);
+            boolean newFileCreated = file.createNewFile();
+            log.debug("Output directory was deleted " + newFileCreated);
+
             Parser parser = Guice.createInjector(new Module()).getInstance(KinopoiskForumParser.class);
             log.info("Start parsing " + url);
             long startTime = System.currentTimeMillis();
