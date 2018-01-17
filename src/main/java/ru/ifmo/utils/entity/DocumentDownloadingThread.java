@@ -1,5 +1,6 @@
 package ru.ifmo.utils.entity;
 
+import org.apache.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import ru.ifmo.entity.utils.ComparableDocument;
@@ -14,6 +15,8 @@ public class DocumentDownloadingThread extends Thread {
     private final int startPageNum;
     private final int endPageNum;
     private SortedSet<ComparableDocument> documents = new TreeSet<>();
+    private static final Logger log = Logger.getLogger(DocumentDownloadingThread.class);
+
 
     public DocumentDownloadingThread(String url, int startPageNum, int endPageNum) {
         this.url = url;
@@ -23,10 +26,11 @@ public class DocumentDownloadingThread extends Thread {
 
     @Override
     public void run() {
+        Document document;
         for (int currentPage = startPageNum; currentPage <= endPageNum; currentPage++) {
-            Document document;
             try {
                 document = Jsoup.connect(url + "=" + currentPage).get();
+                log.debug("Page #" + currentPage + " downloaded");
             } catch (IOException e) {
                 throw new RuntimeException("Document cannot be loaded...", e);
             }

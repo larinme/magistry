@@ -6,10 +6,7 @@ import ru.ifmo.utils.ThreadRunner;
 import ru.ifmo.utils.entity.DocumentDownloadingThread;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
 public class DocumentDownloaderImpl implements DocumentDownloader {
 
@@ -23,8 +20,8 @@ public class DocumentDownloaderImpl implements DocumentDownloader {
     @Override
     public SortedSet<ComparableDocument> getDocuments(String url, String pageParameter, int pageCount) {
         List<DocumentDownloadingThread> threads = new ArrayList<>();
+        int range = (pageCount / COUNT_OF_THREADS) + 1;
         for (int i = 0; i < COUNT_OF_THREADS; i++) {
-            int range = (pageCount / COUNT_OF_THREADS) + 1;
             int startPage = (range * i) + 1;
             int endPage = Math.min(pageCount, (range * (i + 1)));
             threads.add(new DocumentDownloadingThread(url + "&" + pageParameter, startPage, endPage));
