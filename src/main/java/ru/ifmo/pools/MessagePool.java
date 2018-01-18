@@ -28,8 +28,8 @@ public class MessagePool {
         return ++nextId;
     }
 
-    public Message put(Topic topic, Author author, String text, int orderNum, Date date) {
-        Message message = new Message(getNextId(), topic, author, text, orderNum, date);
+    public Message put(Topic topic, Author author, String text, int orderNum, Date date, String link) {
+        Message message = new Message(getNextId(), topic, author, text, orderNum, date, link);
         startMessages.putIfAbsent(topic, message);
         pool.add(message);
         return message;

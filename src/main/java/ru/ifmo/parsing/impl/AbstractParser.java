@@ -79,6 +79,10 @@ public abstract class AbstractParser implements Parser {
 
     abstract Elements getPosts(Document document);
 
+    abstract String getLinkToMessage();
+
+    abstract String getPathToForum();
+
     protected void init(Document document) {
         String url = document.baseUri();
         Source source = sourcePool.putIfNotExists(getSourceName(), url);
@@ -153,6 +157,8 @@ public abstract class AbstractParser implements Parser {
         }
         int orderNum = 25 * (pageNumber - 1) + currentPost;
         LOG.debug("Order number " + orderNum);
+        String url = post.select(getLinkToMessage()).get(0).attr("href");
+        url = getPathToForum() + url;
         String pattern = "<div style=\"margin:20px; margin-top:5px; \">.+?";
         String html = text.html();
         String[] split = html.split(pattern);
@@ -160,7 +166,7 @@ public abstract class AbstractParser implements Parser {
             if (part.equals("")) {
                 continue;
             }
-            Message message = messagePool.put(topic, author, textMessage, orderNum, date);
+            Message message = messagePool.put(topic, author, textMessage, orderNum, date, url);
             split(part, message);
             message.setText(message.getText().replaceFirst("^\\s*", ""));
         }

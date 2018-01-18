@@ -12,14 +12,16 @@ public class Message extends AbstractEntity {
     private List<Token> tokens = new ArrayList<>();
     private String text;
     private boolean isLeaf = true;
+    private final String link;
 
-    public Message(long id, Topic topic, Author author, String text, int orderNum, Date date) {
+    public Message(long id, Topic topic, Author author, String text, int orderNum, Date date, String link) {
         super(id);
         this.topic = topic;
         this.author = author;
         this.text = text;
         this.orderNum = orderNum;
         this.date = date;
+        this.link = link;
     }
 
     @Override
@@ -91,6 +93,10 @@ public class Message extends AbstractEntity {
             builder.append(token.getValue()).append(" ");
         }
         return builder.toString();
+    }
+
+    public String getLink() {
+        return link;
     }
 
     @Override

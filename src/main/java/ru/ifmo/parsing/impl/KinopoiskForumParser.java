@@ -28,6 +28,8 @@ public class KinopoiskForumParser extends AbstractParser {
     private static final String POSTS_CONTAINER = "posts";
     private static final String SOURCE_NAME = "Kinopoisk";
     private static final String THEMA_NAME = "Кино";
+    private static final String PATH = "https://forum.kinopoisk.ru/";
+    private static final String MESSAGE_LINK_QUERY = "a[href^=showpost.php]";
     private Map<TokenType, Function<String, String>> TOKEN_TYPE_PROCESSORS = new HashMap<>();
 
     {
@@ -119,5 +121,15 @@ public class KinopoiskForumParser extends AbstractParser {
     @Override
     public Elements getPosts(Document document) {
         return document.getElementById(POSTS_CONTAINER).getElementsByClass("tborder");
+    }
+
+    @Override
+    String getLinkToMessage() {
+        return MESSAGE_LINK_QUERY;
+    }
+
+    @Override
+    String getPathToForum() {
+        return PATH;
     }
 }
